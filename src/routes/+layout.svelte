@@ -4,43 +4,52 @@
 	import { userInfoStore } from '$lib';
 
 	const navbar = [
-		{ route: 'home', url: '/' },
-		{ route: 'play', url: '/lobby' }
+		{ route: 'HOME', url: '/' },
+		{ route: 'CHAT', url: '/chat' },
+		{ route: 'PLAY', url: '/lobby' }
 	];
 
-	$: user = $userInfoStore.id === '' ? 'login' : $userInfoStore.id;
+	$: user = $userInfoStore.id === '' ? 'LOG IN' : $userInfoStore.id;
 </script>
 
 <!-- hide layout when in game -->
 
-<h1>Great Kingdom</h1>
+<div class="header">
+	<h1>Great Kingdom</h1>
 
-<nav>
-	{#each navbar as n}
-		<a href={n.url} class:active={$page.url.pathname === n.url}>{n.route}</a>
-	{/each}
-	<a href="/user" class:active={$page.url.pathname === '/user'}>{user}</a>
-</nav>
+	<nav>
+		{#each navbar as n}
+			<a href={n.url} class:active={$page.url.pathname === n.url}>{n.route}</a>
+		{/each}
+		<a href="/user" class:active={$page.url.pathname === '/user'}>{user}</a>
+	</nav>
+</div>
 
 <slot />
 
-<h2>footer</h2>
-<p>remove cookie&localstorage</p>
-
 <style>
-	h2 {
-		color: aqua;
+	.header {
+		display: flex;
+		border-bottom: 1px solid gray;
+		justify-content: space-between;
+		background-color: beige;
+	}
+	.header h1 {
+		margin: 0;
 	}
 
 	nav {
 		display: flex;
 	}
-
 	a {
+		all: unset;
 		padding: 1rem;
+		cursor: pointer;
+		background-color: skyblue;
+		color: darkslategray;
 	}
 
 	.active {
-		background-color: cornflowerblue;
+		background-color: orange;
 	}
 </style>

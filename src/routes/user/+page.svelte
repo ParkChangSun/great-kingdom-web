@@ -5,20 +5,22 @@
 	let passwordInput: string;
 
 	const handleSignin = async () => {
-		const res = await fetch('http://localhost:8000/auth/signin', {
+		const res = await fetch('https://akb3ys35m5.execute-api.us-east-1.amazonaws.com/Prod/signin', {
 			method: 'POST',
 			credentials: 'include',
 			body: JSON.stringify({
-				id: idInput,
-				password: passwordInput
+				Id: idInput,
+				Password: passwordInput
 			})
 		});
 		if (res.ok) {
-			res.json().then((v) => {
-				userInfoStore.set({ id: v.name });
-			});
+			// res.json().then((v) => {
+			// 	// userInfoStore.set({ id: v.name });
+			// 	console.log(v);
+			// });
+			alert(res.statusText);
 		} else {
-			console.log(res.statusText);
+			alert(res.statusText);
 		}
 	};
 
@@ -27,12 +29,12 @@
 	let passConfirm: string;
 
 	const handleSignUp = async () => {
-		const res = await fetch('http://localhost:8000/auth/signup', {
+		const res = await fetch('https://akb3ys35m5.execute-api.us-east-1.amazonaws.com/Prod/signup', {
 			method: 'POST',
 			credentials: 'omit',
 			body: JSON.stringify({
-				id: signUpId,
-				password: signUpPass
+				Id: signUpId,
+				Password: signUpPass
 			})
 		});
 		if (res.ok) {
@@ -40,6 +42,13 @@
 		} else {
 			alert(res.statusText);
 		}
+	};
+
+	const hello = async () => {
+		const res = await fetch('https://akb3ys35m5.execute-api.us-east-1.amazonaws.com/Prod/cookie', {
+			method: 'GET',
+			credentials: 'include'
+		});
 	};
 </script>
 
@@ -54,6 +63,8 @@
 		<button> Sign In </button>
 	</form>
 {/if}
+
+<button on:click={hello}>cookie</button>
 
 <form on:submit|preventDefault={handleSignUp}>
 	<input type="text" placeholder="Name" bind:value={signUpId} />
