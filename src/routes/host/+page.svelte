@@ -5,20 +5,22 @@
 	let lobbyPassword: string;
 
 	const submitHandler = async () => {
-		const res = await fetch('http://localhost:8000/game/create', {
+		const res = await fetch('https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/game', {
 			method: 'POST',
 			credentials: 'include',
 			body: JSON.stringify({
 				name: lobbyName,
-				password: lobbyPassword
+				password: lobbyPassword,
+				GameSessionName: lobbyName
 			})
 		});
-		if (res.ok) {
-			const { id }: { id: string } = await res.json();
-			goto(`/game/${id}`);
-		} else {
-			console.log(res);
-		}
+		// if (res.ok) {
+		// 	const { id }: { id: string } = await res.json();
+		// 	goto(`/game/${id}`);
+		// } else {
+		// 	console.log(res);
+		// }
+		console.log(res);
 	};
 </script>
 

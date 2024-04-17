@@ -2,145 +2,141 @@
 	import { goto } from '$app/navigation';
 	import { onDestroy, onMount } from 'svelte';
 
-	let eventSource: EventSource;
-
-	type Lobby = {
-		id: string;
-		name: string;
-		player1: string;
-		player2: string;
-		isPlaying: Boolean;
-		isLocked: Boolean;
+	type GameSession = {
+		GameSessionId: string;
+		GameSessionName: string;
 	};
-	let lobbies: Lobby[] = [];
+	let gameSessions: GameSession[] = [];
+	let loaded: boolean = false;
 
-	onMount(async () => {
-		eventSource = new EventSource('http://localhost:8000/game/games', {
-			withCredentials: true
-		});
-
-		eventSource.onerror = (e) => {
-			console.log('onerror', e);
-		};
-
-		eventSource.addEventListener('message', (msg: MessageEvent<string>) => {
-			lobbies = JSON.parse(msg.data);
-		});
-	});
-
-	onDestroy(() => {
-		eventSource.close();
-	});
-
-	let modalOn: Boolean = false;
-	let modalLobbyId: string = '';
-	let pass = '';
-	const onSubmit = async () => {
-		const res = await fetch(`http://localhost:8000/game/pass/${modalLobbyId}`, {
-			method: 'POST',
-			body: JSON.stringify({ password: pass }),
+	const getSessions = async () => {
+		loaded = false;
+		const res = await fetch('https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/games', {
+			method: 'GET',
 			credentials: 'include'
 		});
 		if (res.ok) {
-			goto(`/game/${modalLobbyId}`);
+			gameSessions = await res.json();
 		} else {
-			alert('password incorrect');
+			console.log(res);
 		}
+		loaded = true;
 	};
 
-	const onJoin = (l: Lobby) => {
-		if (l.isLocked) {
-			modalOn = true;
-			modalLobbyId = l.id;
-		} else {
-			goto(`/game/${l.id}`);
-		}
+	onMount(async () => {
+		getSessions();
+	});
+
+	let lobbyName: string;
+	let lobbyPassword: string;
+
+	let createStatus: string = 'Create & Join';
+
+	const createHandler = async () => {
+		createStatus = 'Loading...';
+		// const res = await fetch('https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/game', {
+		// 	method: 'POST',
+		// 	credentials: 'include',
+		// 	body: JSON.stringify({
+		// 		GameSessionName: lobbyName
+		// 	})
+		// });
+		// if (res.ok) {
+		// 	const { GameSessionId }: { GameSessionId: string } = await res.json();
+		// 	goto(`/game/${GameSessionId}`);
+		// } else {
+		// 	console.log(res);
+		// 	createStatus = 'Create & Join';
+		// }
+
+		fetch('https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/game', {
+			method: 'POST',
+			credentials: 'include',
+			body: JSON.stringify({
+				GameSessionName: lobbyName
+			})
+		})
+			.then((res) => {
+				console.log('ok');
+			})
+			.catch((r) => console.log(r));
 	};
 </script>
 
-{#if modalOn}
-	<div class="modalback">
-		<div class="modal">
-			<form on:submit|preventDefault={onSubmit}>
-				<p>input password</p>
-				<input bind:value={pass} /><button type="submit">ok</button><button
-					on:click={() => (modalOn = false)}>cancel</button
-				>
-			</form>
-		</div>
-	</div>
-{/if}
-<h2>Main Lobby</h2>
-<a href="/host"> Create Lobby </a>
-<div>
-	{#if lobbies.length !== 0}
-		{#each lobbies as l}
-			<button class="lobby" on:click={() => onJoin(l)}
-				><p>{l.name}</p>
-				<p>P1 {l.player1} VS {l.player2} P2</p>
-				<p class="isPlayingStatus" class:isPlaying={l.isPlaying}>
-					{l.isPlaying ? 'PLAYING' : 'WAITING'}
-				</p>
-			</button>
-		{/each}
-	{:else}
-		<button class="lobby"
-			><p>name</p>
-			<p>P1 pla1 VS pla2 P2</p>
-			<p class="isPlayingStatus isPlaying">PLAYING</p>
-		</button>
-		<p>no game found</p>
-	{/if}
+<p class="header">Main Lobby</p>
+<hr />
+<form on:submit|preventDefault={createHandler}>
+	<p>Create Game Session</p>
+	<input type="text" placeholder="Name" bind:value={lobbyName} />
+	<button type="submit">{createStatus}</button>
+</form>
+<hr />
+<div class="sessionsHeader">
+	<p>Online Game Sessions</p>
+	<button class="reload" disabled={!loaded} on:click={getSessions}>Reload</button>
 </div>
 
-<style>
-	.modalback {
-		width: 100%;
-		height: 100%;
-		position: fixed;
-		top: 0;
-		left: 0;
-		background: rgba(0, 0, 0, 0.8);
-	}
+{#if loaded}
+	{#if gameSessions.length !== 0}
+		<div class="sessions">
+			{#each gameSessions as l}
+				<button class="lobby" on:click={() => goto(`game/${l.GameSessionId}`)}
+					><p>{l.GameSessionName}</p></button
+				>
+			{/each}
+		</div>
+	{:else}
+		<p>No Game Sessions Online</p>
+	{/if}
+{:else}
+	<p>Loading...</p>
+{/if}
 
-	.modal {
-		height: 20%;
-		width: 30%;
-		margin: 30% auto;
-		background-color: white;
-		border-radius: 10px;
-	}
-	.modal p {
+<style>
+	p {
 		text-align: center;
 	}
+	.header {
+		margin: 2rem auto;
+		font-size: 2rem;
+	}
 
+	.sessionsHeader {
+		position: relative;
+	}
+	.reload {
+		position: absolute;
+		right: 0;
+		top: 0;
+	}
+
+	.sessions {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	.sessions .lobby:nth-child(2n + 1) {
+		background-color: aqua;
+	}
+	.sessions .lobby:nth-child(2n) {
+		background-color: orange;
+	}
 	.lobby {
 		all: unset;
-		background-color: aquamarine;
-		border: 1px solid black;
-		border-radius: 5px;
-		padding: 5px;
-		cursor: pointer;
+		font-size: 1.5rem;
+		padding: 0.5rem;
+		border-radius: 1rem;
 	}
-	.lobby:hover {
-		background-color: rgb(124, 255, 255);
-	}
-	.lobby p {
+	.lobby > p {
 		margin: 0;
 	}
 
-	.isPlayingStatus {
-		color: gray;
-	}
-	.isPlaying {
-		color: orangered;
+	form {
+		display: flex;
+		flex-direction: column;
 	}
 
-	a {
-		all: unset;
-		cursor: pointer;
-		background-color: lightgray;
-		padding: 1rem;
-		border: 2px solid black;
+	input {
+		font-size: 1.5rem;
 	}
 </style>
