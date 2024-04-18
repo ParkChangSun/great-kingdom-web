@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { userInfoStore } from '$lib';
 	import { onDestroy, onMount } from 'svelte';
 
 	type GameSession = {
@@ -11,15 +12,28 @@
 
 	const getSessions = async () => {
 		loaded = false;
-		const res = await fetch('https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/games', {
+
+		await fetch('https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/games', {
 			method: 'GET',
 			credentials: 'include'
-		});
-		if (res.ok) {
-			gameSessions = await res.json();
-		} else {
-			console.log(res);
-		}
+		})
+			.then((res) => {
+				if (res.ok) {
+					return res.json();
+				} else if (Math.floor(res.status / 100) === 4) {
+					userInfoStore.set({ id: '' });
+					alert('login!');
+					goto('/user');
+					return [];
+				} else {
+					throw new Error(res.status.toString());
+				}
+			})
+			.then((data) => {
+				gameSessions = data;
+			})
+			.catch((err) => console.log(err));
+
 		loaded = true;
 	};
 
@@ -34,20 +48,6 @@
 
 	const createHandler = async () => {
 		createStatus = 'Loading...';
-		// const res = await fetch('https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/game', {
-		// 	method: 'POST',
-		// 	credentials: 'include',
-		// 	body: JSON.stringify({
-		// 		GameSessionName: lobbyName
-		// 	})
-		// });
-		// if (res.ok) {
-		// 	const { GameSessionId }: { GameSessionId: string } = await res.json();
-		// 	goto(`/game/${GameSessionId}`);
-		// } else {
-		// 	console.log(res);
-		// 	createStatus = 'Create & Join';
-		// }
 
 		fetch('https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/game', {
 			method: 'POST',
@@ -56,10 +56,15 @@
 				GameSessionName: lobbyName
 			})
 		})
-			.then((res) => {
-				console.log('ok');
+			.then((res) => res.json())
+			.then((data) => {
+				const { GameSessionId }: { GameSessionId: string } = data;
+				goto(`/game/${GameSessionId}`);
 			})
-			.catch((r) => console.log(r));
+			.catch((e) => {
+				console.log(e);
+				createStatus = 'Create & Join';
+			});
 	};
 </script>
 

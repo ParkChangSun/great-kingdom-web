@@ -10,13 +10,13 @@
 	];
 
 	$: user = $userInfoStore.id === '' ? 'LOG IN' : $userInfoStore.id;
+	// $: console.log($page.url.pathname);
 </script>
 
 <!-- hide layout when in game -->
 
 <div class="header">
 	<h1>Great Kingdom</h1>
-
 	<nav>
 		{#each navbar as n}
 			<a href={n.url} class:active={$page.url.pathname === n.url}>{n.route}</a>
@@ -26,6 +26,8 @@
 </div>
 
 <slot />
+
+<div class="footer" />
 
 <style>
 	.header {
@@ -41,14 +43,13 @@
 	nav {
 		display: flex;
 	}
-	a {
+	nav > a {
 		all: unset;
 		padding: 1rem;
 		cursor: pointer;
 		background-color: skyblue;
 		color: darkslategray;
 	}
-
 	.active {
 		background-color: orange;
 	}
