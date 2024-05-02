@@ -1,5 +1,42 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { userInfoStore } from '$lib';
+
+	type UserInfo = {
+		W: number;
+		L: number;
+		D: number;
+	};
+	let userInfo: UserInfo = { W: 0, L: 0, D: 0 };
+	let loaded = false;
+
+	$: if ($userInfoStore.id !== '') {
+		loaded = false;
+		fetch(
+			`https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/user?UserId=${$userInfoStore.id}`,
+			{
+				method: 'GET',
+				credentials: 'include'
+			}
+		)
+			.then((res) => {
+				if (res.ok) {
+					return res.json();
+				} else if (Math.floor(res.status / 100) === 4) {
+					userInfoStore.set({ id: '' });
+					alert('login!');
+					goto('/user');
+					// return Object;
+				} else {
+					throw new Error(res.status.toString());
+				}
+			})
+			.then((res) => {
+				userInfo = res;
+				loaded = true;
+			})
+			.catch((e) => console.log(e));
+	}
 
 	let idInput: string;
 	let passwordInput: string;
@@ -27,7 +64,7 @@
 	let passConfirm: string;
 
 	const handleSignUp = async () => {
-		const res = await fetch('https://akb3ys35m5.execute-api.us-east-1.amazonaws.com/Prod/signup', {
+		const res = await fetch('https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/signup', {
 			method: 'POST',
 			credentials: 'omit',
 			body: JSON.stringify({
@@ -37,14 +74,26 @@
 		});
 		if (res.ok) {
 			alert('Sign Up Success');
+			signUpId = '';
+			signUpPass = '';
+			passConfirm = '';
 		} else {
 			alert('Sign Up Failed');
 		}
+	};
+
+	const handleSignOut = async () => {
+		userInfoStore.set({ id: '' });
+		// 쿠키 삭제
 	};
 </script>
 
 {#if $userInfoStore.id !== ''}
 	<p>Hello {$userInfoStore.id}</p>
+	<p>WINs : {userInfo.W}</p>
+	<p>LOSSes : {userInfo.L}</p>
+	<p>DRAWs : {userInfo.D}</p>
+	<button on:click={handleSignOut} class="signout">Sign Out</button>
 {:else}
 	<form on:submit|preventDefault={handleSignin}>
 		<p>Sign In</p>
@@ -98,5 +147,8 @@
 		border: 0;
 		border-radius: 1rem;
 		height: 1.5rem;
+	}
+	.signout {
+		margin: 0 auto;
 	}
 </style>

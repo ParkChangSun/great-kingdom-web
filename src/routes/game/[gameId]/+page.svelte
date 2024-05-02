@@ -2,7 +2,7 @@
 	import { afterUpdate, onDestroy, onMount } from 'svelte';
 	import type { PageData } from './$types';
 	import { userInfoStore } from '$lib';
-	import { goto } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 
 	export let data: PageData;
 
@@ -16,17 +16,25 @@
 
 	let hostId = '';
 	let players: { UserId: string }[] = [];
+	let currentConnections: { UserId: string }[] = [];
 
-	$: isHost = $userInfoStore.id === players[0].UserId;
+	$: isHost = players.length > 0 && $userInfoStore.id === players[0].UserId;
+	$: tableBorder = game.Playing ? (game.Turn % 2 === 1 ? 'turnBlue' : 'turnOrange') : 'notPlaying';
 
 	type Game = {
-		Borad: number[][];
+		Board: number[][];
 		Turn: number;
 		PassFlag: boolean;
 		Playing: boolean;
 		PlayersId: string[];
 	};
-	let game: Game;
+	let game: Game = {
+		Board: Array.from(Array(9), (v, i) => Array(0, 0, 0, 0, 0, 0, 0, 0, 0)),
+		Turn: 0,
+		PassFlag: false,
+		Playing: false,
+		PlayersId: ['p1', 'p2']
+	};
 
 	onMount(async () => {
 		socket = new WebSocket(
@@ -44,19 +52,13 @@
 		});
 		socket.addEventListener('message', (e) => {
 			const data = JSON.parse(e.data);
-			console.log(data);
-			if (data.EventType === 'JOIN') {
-				chat = [...chat, data.Chat];
-				players = data.Players;
-				game = data.Game;
-			} else if (data.EventType === 'CHAT') {
+			if (data.EventType === 'CHAT') {
 				chat = [...chat, data.Chat];
 			} else if (data.EventType === 'GAME') {
 				game = data.Game;
-				chat = [...chat, data.Chat];
-			} else if (data.EventType === 'LEAVE') {
-				chat = [...chat, data.Chat];
+			} else if (data.EventType === 'USER') {
 				players = data.Players;
+				currentConnections = data.CurrentConnections;
 			}
 		});
 	});
@@ -69,6 +71,12 @@
 		socket.close();
 	});
 
+	beforeNavigate((e) => {
+		if (socket && !confirm('Do you want to leave this game?')) {
+			e.cancel();
+		}
+	});
+
 	let msg: string;
 
 	const sendMessage = () => {
@@ -77,28 +85,28 @@
 	};
 
 	const startGame = () => {
-		socket.send(JSON.stringify({ action: 'game', Start: true }));
+		socket.send(JSON.stringify({ action: 'move', Start: true }));
 	};
 
 	const doSingleMove = (r: Number, c: Number) => {
-		socket.send(JSON.stringify({ action: 'game', Point: { r, c } }));
+		socket.send(JSON.stringify({ action: 'move', Point: { R: r, C: c } }));
 	};
 
 	const doPassMove = () => {
-		socket.send(JSON.stringify({ action: 'game', Pass: true }));
+		socket.send(JSON.stringify({ action: 'move', Pass: true }));
 	};
 </script>
 
 <p>{lobbyName}</p>
 <div id="game">
-	<table>
-		{#each game.Borad as r, i}
+	<table class={tableBorder}>
+		{#each game.Board as r, i}
 			<tr>
 				{#each r as c, j}
 					<td
 						><button
 							class={`cell cellstatus${c}`}
-							disabled={c !== 0}
+							disabled={c !== 0 || game.PlayersId[(game.Turn - 1) % 2] !== $userInfoStore.id}
 							on:click={() => doSingleMove(i, j)}>{c}</button
 						></td
 					>
@@ -106,20 +114,17 @@
 			</tr>
 		{/each}
 	</table>
-	<button on:click={doPassMove}>PASS</button>
+	<button on:click={doPassMove}>{game.PassFlag ? 'Opponent Passed' : 'Pass'}</button>
 
 	<div id="lobbyinfo">
-		<p>Players</p>
-		{#if players.length > 0}
-			<div class="player">{players[0].UserId}</div>
-		{:else}
-			<div class="player">empty</div>
-		{/if}
-		{#if players.length > 1}
-			<div class="player">{players[1].UserId}</div>
-		{:else}
-			<div class="player">empty</div>
-		{/if}
+		<div class="gameInfo">
+			<p>Turn {game.Turn}</p>
+			{#if game.Turn === 0}
+				<p>Game not started.</p>
+			{:else}
+				<p>{players[(game.Turn - 1) % 2]}</p>
+			{/if}
+		</div>
 		<div bind:this={chatDiv} class="chat">
 			<ul>
 				{#each chat as c}
@@ -135,19 +140,45 @@
 			<button on:click={startGame}>start</button>
 		{/if}
 	</div>
-</div>
 
-<p>playing {game.Playing}</p>
-<p class={game.Turn % 2 === 1 ? 'turnBlue' : 'turnOrange'}>
-	turn {game.Turn} passflag {game.PassFlag}
-</p>
-<p>player1 {game.PlayersId[0]} player2 {game.PlayersId[1]}</p>
+	<div>
+		<p>Players</p>
+		{#if players.length > 0}
+			<p class={game.Playing ? (players[0].UserId === game.PlayersId[0] ? 'blue' : 'orange') : ''}>
+				{players[0].UserId}
+			</p>
+		{:else}
+			<p>empty</p>
+		{/if}
+		{#if players.length > 1}
+			<p class={game.Playing ? (players[1].UserId === game.PlayersId[1] ? 'orange' : 'blue') : ''}>
+				{players[1].UserId}
+			</p>
+		{:else}
+			<div>empty</div>
+		{/if}
+		<p>Users</p>
+		<div class="users">
+			{#each currentConnections as c}
+				<p>{c.UserId}</p>
+			{/each}
+		</div>
+	</div>
+</div>
 
 <style>
 	#lobbyinfo {
 		display: flex;
 		flex-direction: column;
-		gap: 5px;
+	}
+
+	.gameInfo {
+		padding: 1rem;
+		border: 3px solid black;
+	}
+	.gameInfo > p {
+		margin: 0;
+		text-align: center;
 	}
 
 	#game {
@@ -169,16 +200,25 @@
 		margin: 0;
 	}
 
-	table {
-		border-spacing: 5px;
-		border: 5px solid black;
-	}
-
-	.turnBlue {
+	.blue {
 		background-color: blue;
 	}
-	.turnOrange {
+	.orange {
 		background-color: orange;
+	}
+
+	table {
+		border-spacing: 5px;
+		/* border: 5px solid black; */
+	}
+	.notPlaying {
+		border: 5px solid gray;
+	}
+	.turnBlue {
+		border: 5px solid blue;
+	}
+	.turnOrange {
+		border: 5px solid orange;
 	}
 
 	.cell {
