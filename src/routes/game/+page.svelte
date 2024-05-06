@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { afterUpdate, onDestroy, onMount } from 'svelte';
-	import type { PageData } from './$types';
+	// import type { PageData } from '../routes/game/[gameId]/$types';
 	import { userInfoStore } from '$lib';
 	import { beforeNavigate, goto } from '$app/navigation';
+	import { page } from '$app/stores';
 
-	export let data: PageData;
+	// export let data: PageData;
+	// const { gameId } = data;
 
-	const { gameId } = data;
 	let lobbyName: string = '';
 
 	let socket: WebSocket;
@@ -38,7 +39,7 @@
 
 	onMount(async () => {
 		socket = new WebSocket(
-			`wss://omlo79fwk8.execute-api.us-east-1.amazonaws.com/Dev/?GameSessionId=${gameId}`
+			`wss://omlo79fwk8.execute-api.us-east-1.amazonaws.com/Dev/?GameSessionId=${$page.url.searchParams.get('gameId')}`
 		);
 		socket.addEventListener('open', () => {
 			console.log('Opened');

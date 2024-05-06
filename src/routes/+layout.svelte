@@ -10,7 +10,6 @@
 	];
 
 	$: user = $userInfoStore.id === '' ? 'LOG IN' : $userInfoStore.id;
-	// $: console.log($page.url.pathname);
 </script>
 
 <!-- hide layout when in game -->

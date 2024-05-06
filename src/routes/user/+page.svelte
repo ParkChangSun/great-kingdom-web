@@ -83,8 +83,14 @@
 	};
 
 	const handleSignOut = async () => {
+		await fetch('https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/signout', {
+			method: 'POST',
+			credentials: 'include',
+			body: JSON.stringify({
+				UserId: $userInfoStore.id
+			})
+		});
 		userInfoStore.set({ id: '' });
-		// 쿠키 삭제
 	};
 </script>
 

@@ -59,7 +59,7 @@
 			.then((res) => res.json())
 			.then((data) => {
 				const { GameSessionId }: { GameSessionId: string } = data;
-				goto(`/game/${GameSessionId}`);
+				goto(`/game?gameId=${GameSessionId}`);
 			})
 			.catch((e) => {
 				console.log(e);
@@ -85,7 +85,7 @@
 	{#if gameSessions.length !== 0}
 		<div class="sessions">
 			{#each gameSessions as l}
-				<button class="lobby" on:click={() => goto(`game/${l.GameSessionId}`)}
+				<button class="lobby" on:click={() => goto(`game?gameId=${l.GameSessionId}`)}
 					><p>{l.GameSessionName}</p></button
 				>
 			{/each}
