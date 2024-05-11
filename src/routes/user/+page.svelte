@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { userInfoStore } from '$lib';
+	import { userInfoStore, API_URL, refreshToken } from '$lib';
 
 	type UserInfo = {
 		W: number;
@@ -12,21 +12,21 @@
 
 	$: if ($userInfoStore.id !== '') {
 		loaded = false;
-		fetch(
-			`https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/user?UserId=${$userInfoStore.id}`,
-			{
-				method: 'GET',
-				credentials: 'include'
-			}
-		)
+
+		fetch(`${$API_URL}/user?UserId=${$userInfoStore.id}`, {
+			method: 'GET',
+			credentials: 'include'
+		})
 			.then((res) => {
 				if (res.ok) {
 					return res.json();
 				} else if (Math.floor(res.status / 100) === 4) {
-					userInfoStore.set({ id: '' });
-					alert('login!');
-					goto('/user');
-					// return Object;
+					const valid = refreshToken();
+					if (!valid) {
+						userInfoStore.set({ authorized: false, id: '' });
+						alert('login!');
+						goto('/user');
+					}
 				} else {
 					throw new Error(res.status.toString());
 				}
@@ -42,7 +42,7 @@
 	let passwordInput: string;
 
 	const handleSignin = async () => {
-		const res = await fetch('https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/signin', {
+		const res = await fetch(`${$API_URL}/signin`, {
 			method: 'POST',
 			credentials: 'include',
 			body: JSON.stringify({
@@ -51,11 +51,10 @@
 			})
 		});
 		if (res.ok) {
-			res.json().then((v) => {
-				userInfoStore.set({ id: v.Id });
-			});
+			const jsonBody = await res.json();
+			userInfoStore.set({ authorized: true, id: jsonBody.Id });
 		} else {
-			alert('login failed');
+			alert(res.statusText);
 		}
 	};
 
@@ -64,7 +63,7 @@
 	let passConfirm: string;
 
 	const handleSignUp = async () => {
-		const res = await fetch('https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/signup', {
+		const res = await fetch(`${$API_URL}/signup`, {
 			method: 'POST',
 			credentials: 'omit',
 			body: JSON.stringify({
@@ -83,14 +82,11 @@
 	};
 
 	const handleSignOut = async () => {
-		await fetch('https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/signout', {
+		await fetch(`${$API_URL}/signout`, {
 			method: 'POST',
-			credentials: 'include',
-			body: JSON.stringify({
-				UserId: $userInfoStore.id
-			})
+			credentials: 'include'
 		});
-		userInfoStore.set({ id: '' });
+		userInfoStore.set({ authorized: false, id: '' });
 	};
 </script>
 

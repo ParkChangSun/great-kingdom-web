@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { userInfoStore } from '$lib';
+	import { API_URL, refreshToken, userInfoStore } from '$lib';
 	import { onDestroy, onMount } from 'svelte';
+	// import loading from '$lib/assets/loading.webp';
 
 	type GameSession = {
 		GameSessionId: string;
@@ -13,26 +14,22 @@
 	const getSessions = async () => {
 		loaded = false;
 
-		await fetch('https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/games', {
+		const res = await fetch(`${$API_URL}/games`, {
 			method: 'GET',
 			credentials: 'include'
-		})
-			.then((res) => {
-				if (res.ok) {
-					return res.json();
-				} else if (Math.floor(res.status / 100) === 4) {
-					userInfoStore.set({ id: '' });
-					alert('login!');
-					goto('/user');
-					return [];
-				} else {
-					throw new Error(res.status.toString());
-				}
-			})
-			.then((data) => {
-				gameSessions = data;
-			})
-			.catch((err) => console.log(err));
+		});
+		if (res.ok) {
+			gameSessions = await res.json();
+		} else if (Math.floor(res.status / 100) === 4) {
+			const valid = await refreshToken();
+			if (!valid) {
+				userInfoStore.set({ authorized: false, id: '' });
+				alert('login!');
+				goto('/user');
+			}
+		} else {
+			alert(res.statusText);
+		}
 
 		loaded = true;
 	};
@@ -49,7 +46,7 @@
 	const createHandler = async () => {
 		createStatus = 'Loading...';
 
-		fetch('https://loiaxfq0s1.execute-api.us-east-1.amazonaws.com/Prod/game', {
+		fetch(`${$API_URL}/game`, {
 			method: 'POST',
 			credentials: 'include',
 			body: JSON.stringify({
@@ -85,7 +82,7 @@
 	{#if gameSessions.length !== 0}
 		<div class="sessions">
 			{#each gameSessions as l}
-				<button class="lobby" on:click={() => goto(`game?gameId=${l.GameSessionId}`)}
+				<button class="lobby" on:click={() => goto(`/game?gameId=${l.GameSessionId}`)}
 					><p>{l.GameSessionName}</p></button
 				>
 			{/each}
@@ -94,7 +91,7 @@
 		<p>No Game Sessions Online</p>
 	{/if}
 {:else}
-	<p>Loading...</p>
+	<img src="./loading.webp" alt="loading" />
 {/if}
 
 <style>

@@ -39,7 +39,7 @@
 
 	onMount(async () => {
 		socket = new WebSocket(
-			`wss://omlo79fwk8.execute-api.us-east-1.amazonaws.com/Dev/?GameSessionId=${$page.url.searchParams.get('gameId')}`
+			`wss://websocket.greatkingdom.net?GameSessionId=${$page.url.searchParams.get('gameId')}`
 		);
 		socket.addEventListener('open', () => {
 			console.log('Opened');
