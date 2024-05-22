@@ -1,12 +1,8 @@
 <script lang="ts">
 	import { afterUpdate, onDestroy, onMount } from 'svelte';
-	// import type { PageData } from '../routes/game/[gameId]/$types';
 	import { userInfoStore } from '$lib';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/stores';
-
-	// export let data: PageData;
-	// const { gameId } = data;
 
 	let lobbyName: string = '';
 
@@ -15,7 +11,6 @@
 	let chat: string[] = [];
 	let chatDiv: HTMLDivElement;
 
-	let hostId = '';
 	let players: { UserId: string }[] = [];
 	let currentConnections: { UserId: string }[] = [];
 
@@ -46,7 +41,7 @@
 		});
 		socket.addEventListener('close', (e) => {
 			console.log(e);
-			goto('/lobby');
+			// goto('/lobby');
 		});
 		socket.addEventListener('error', (e) => {
 			console.log(e);
@@ -123,7 +118,7 @@
 			{#if game.Turn === 0}
 				<p>Game not started.</p>
 			{:else}
-				<p>{players[(game.Turn - 1) % 2]}</p>
+				<p>{players[(game.Turn - 1) % 2].UserId}</p>
 			{/if}
 		</div>
 		<div bind:this={chatDiv} class="chat">
@@ -202,15 +197,14 @@
 	}
 
 	.blue {
-		background-color: blue;
+		color: blue;
 	}
 	.orange {
-		background-color: orange;
+		color: orange;
 	}
 
 	table {
 		border-spacing: 5px;
-		/* border: 5px solid black; */
 	}
 	.notPlaying {
 		border: 5px solid gray;

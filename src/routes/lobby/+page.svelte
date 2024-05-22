@@ -91,7 +91,8 @@
 		<p>No Game Sessions Online</p>
 	{/if}
 {:else}
-	<img src="./loading.webp" alt="loading" />
+	<img src="./loading.webp" alt="loading" class="center" />
+	<p class="center">Loading Game Sessions...</p>
 {/if}
 
 <style>
@@ -101,6 +102,11 @@
 	.header {
 		margin: 2rem auto;
 		font-size: 2rem;
+	}
+
+	.center {
+		margin: auto;
+		display: block;
 	}
 
 	.sessionsHeader {

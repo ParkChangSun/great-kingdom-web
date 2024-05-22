@@ -88,6 +88,8 @@
 		});
 		userInfoStore.set({ authorized: false, id: '' });
 	};
+
+	let mode = false;
 </script>
 
 {#if $userInfoStore.id !== ''}
@@ -102,6 +104,7 @@
 		<input type="text" placeholder="Name" bind:value={idInput} />
 		<input type="password" placeholder="Password" bind:value={passwordInput} />
 		<button> Sign In </button>
+		<button type="button" on:click={() => (mode = !mode)}>Sign Up</button>
 	</form>
 	<hr />
 	<form on:submit|preventDefault={handleSignUp}>
@@ -110,6 +113,7 @@
 		<input type="password" placeholder="Password" bind:value={signUpPass} />
 		<input type="password" placeholder="Password again" bind:value={passConfirm} />
 		<button> Sign Up </button>
+		<button type="button" on:click={() => (mode = !mode)}> Sign In </button>
 	</form>
 {/if}
 
