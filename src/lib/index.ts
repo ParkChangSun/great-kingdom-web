@@ -24,9 +24,12 @@ export const refreshToken = async () => {
 		method: 'POST',
 		credentials: 'include'
 	});
-	if (!res.ok) {
+	if (res.ok) {
+		const j = await res.json()
+		userInfoStore.set({ authorized: true, id: j.id })
+		return true;
+	} else {
 		userInfoStore.set({ authorized: false, id: '' });
 		return false;
 	}
-	return true;
 };

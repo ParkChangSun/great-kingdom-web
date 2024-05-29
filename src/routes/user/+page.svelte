@@ -10,32 +10,27 @@
 	let userInfo: UserInfo = { W: 0, L: 0, D: 0 };
 	let loaded = false;
 
+	// maybe getuser does not need auth
+	const getUserInfo = async () => {
+		const res = await fetch(`${$API_URL}/user?UserId=${$userInfoStore.id}`, {
+			method: 'GET',
+			credentials: 'include'
+		});
+		if (res.ok) {
+			userInfo = await res.json();
+		} else {
+			throw new Error(res.status.toString());
+		}
+	};
+
 	$: if ($userInfoStore.id !== '') {
 		loaded = false;
 
-		fetch(`${$API_URL}/user?UserId=${$userInfoStore.id}`, {
-			method: 'GET',
-			credentials: 'include'
-		})
-			.then((res) => {
-				if (res.ok) {
-					return res.json();
-				} else if (Math.floor(res.status / 100) === 4) {
-					const valid = refreshToken();
-					if (!valid) {
-						userInfoStore.set({ authorized: false, id: '' });
-						alert('login!');
-						goto('/user');
-					}
-				} else {
-					throw new Error(res.status.toString());
-				}
-			})
-			.then((res) => {
-				userInfo = res;
-				loaded = true;
-			})
-			.catch((e) => console.log(e));
+		getUserInfo().catch((err) => {
+			console.log(err);
+		});
+
+		loaded = true;
 	}
 
 	let idInput: string;
@@ -89,7 +84,7 @@
 		userInfoStore.set({ authorized: false, id: '' });
 	};
 
-	let mode = false;
+	let mode = true;
 </script>
 
 {#if $userInfoStore.id !== ''}
@@ -98,7 +93,7 @@
 	<p>LOSSes : {userInfo.L}</p>
 	<p>DRAWs : {userInfo.D}</p>
 	<button on:click={handleSignOut} class="signout">Sign Out</button>
-{:else}
+{:else if mode}
 	<form on:submit|preventDefault={handleSignin}>
 		<p>Sign In</p>
 		<input type="text" placeholder="Name" bind:value={idInput} />
@@ -106,7 +101,7 @@
 		<button> Sign In </button>
 		<button type="button" on:click={() => (mode = !mode)}>Sign Up</button>
 	</form>
-	<hr />
+{:else}
 	<form on:submit|preventDefault={handleSignUp}>
 		<p>Sign Up</p>
 		<input type="text" placeholder="Name" bind:value={signUpId} />
@@ -141,11 +136,6 @@
 		border: 0;
 		border-radius: 1rem;
 		padding: 0.5rem;
-	}
-
-	hr {
-		width: 24rem;
-		margin: 2rem auto;
 	}
 
 	button {
