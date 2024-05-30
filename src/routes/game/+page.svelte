@@ -6,16 +6,15 @@
 
 	let lobbyName: string = '';
 
-	let socket: WebSocket;
-
 	let chat: string[] = [];
 	let chatDiv: HTMLDivElement;
+	$: if (chat.length > 0) {
+		chatDiv.scroll({ top: chatDiv.scrollHeight });
+	}
 
 	let players: { UserId: string }[] = [];
 	let currentConnections: { UserId: string }[] = [];
-
 	$: isHost = players.length > 0 && $userInfoStore.id === players[0].UserId;
-	$: tableBorder = game.Playing ? (game.Turn % 2 === 1 ? 'turnBlue' : 'turnOrange') : 'notPlaying';
 
 	type Game = {
 		Board: number[][];
@@ -31,6 +30,9 @@
 		Playing: false,
 		PlayersId: ['p1', 'p2']
 	};
+	$: tableBorder = game.Playing ? (game.Turn % 2 === 1 ? 'turnBlue' : 'turnOrange') : 'notPlaying';
+
+	let socket: WebSocket;
 
 	onMount(async () => {
 		socket = new WebSocket(
@@ -59,25 +61,21 @@
 		});
 	});
 
-	afterUpdate(() => {
-		chatDiv.scroll({ top: chatDiv.scrollHeight });
-	});
-
 	onDestroy(() => {
 		socket.close();
 	});
 
 	beforeNavigate((e) => {
-		if (socket && !confirm('Do you want to leave this game?')) {
+		if (!confirm('Do you want to leave this game?')) {
 			e.cancel();
 		}
 	});
 
-	let msg: string;
+	let chatInput: string;
 
 	const sendMessage = () => {
-		socket.send(JSON.stringify({ action: 'chat', Chat: msg }));
-		msg = '';
+		socket.send(JSON.stringify({ action: 'chat', Chat: chatInput }));
+		chatInput = '';
 	};
 
 	const startGame = () => {
@@ -102,15 +100,19 @@
 					<td
 						><button
 							class={`cell cellstatus${c}`}
-							disabled={c !== 0 || game.PlayersId[(game.Turn - 1) % 2] !== $userInfoStore.id}
-							on:click={() => doSingleMove(i, j)}>{c}</button
-						></td
+							disabled={!game.Playing ||
+								c !== 0 ||
+								game.PlayersId[(game.Turn - 1) % 2] !== $userInfoStore.id}
+							on:click={() => doSingleMove(i, j)}
+						></button></td
 					>
 				{/each}
 			</tr>
 		{/each}
 	</table>
-	<button on:click={doPassMove}>{game.PassFlag ? 'Opponent Passed' : 'Pass'}</button>
+	<button on:click={doPassMove} disabled={game.PlayersId[(game.Turn - 1) % 2] !== $userInfoStore.id}
+		>{game.PassFlag ? 'Opponent Passed' : 'Pass'}</button
+	>
 
 	<div id="lobbyinfo">
 		<div class="gameInfo">
@@ -118,7 +120,7 @@
 			{#if game.Turn === 0}
 				<p>Game not started.</p>
 			{:else}
-				<p>{players[(game.Turn - 1) % 2].UserId}</p>
+				<p>{game.PlayersId[(game.Turn - 1) % 2]}</p>
 			{/if}
 		</div>
 		<div bind:this={chatDiv} class="chat">
@@ -129,7 +131,7 @@
 			</ul>
 		</div>
 		<form on:submit|preventDefault={sendMessage}>
-			<input type="text" bind:value={msg} />
+			<input type="text" bind:value={chatInput} />
 			<button>CHAT</button>
 		</form>
 		{#if isHost}
@@ -197,10 +199,12 @@
 	}
 
 	.blue {
-		color: blue;
+		color: white;
+		background-color: blue;
 	}
 	.orange {
-		color: orange;
+		color: white;
+		background-color: orange;
 	}
 
 	table {

@@ -1,8 +1,6 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
-	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { API_URL, refreshToken, userInfoStore } from '$lib';
+	import { refreshToken, userInfoStore } from '$lib';
 	import { onMount } from 'svelte';
 
 	const navbar = [
@@ -10,18 +8,12 @@
 		{ route: 'CHAT', url: '/chat' },
 		{ route: 'PLAY', url: '/lobby' }
 	];
-
 	$: user = $userInfoStore.id === '' ? 'LOG IN' : $userInfoStore.id;
 
-	onMount(async () => {
-		const valid = await refreshToken();
-		if (!valid) {
-			userInfoStore.set({ authorized: false, id: '' });
-		}
+	onMount(() => {
+		refreshToken();
 	});
 </script>
-
-<!-- hide layout when in game -->
 
 <div class="header">
 	<h1>Great Kingdom</h1>

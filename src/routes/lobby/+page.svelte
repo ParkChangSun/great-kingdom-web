@@ -2,7 +2,6 @@
 	import { goto } from '$app/navigation';
 	import { API_URL, refreshToken, userInfoStore } from '$lib';
 	import { onDestroy, onMount } from 'svelte';
-	// import loading from '$lib/assets/loading.webp';
 
 	type GameSession = {
 		GameSessionId: string;
@@ -18,12 +17,13 @@
 			method: 'GET',
 			credentials: 'include'
 		});
+
 		if (res.ok) {
 			gameSessions = await res.json();
-		} else if (Math.floor(res.status / 100) === 4) {
-			const valid = await refreshToken();
-			if (!valid) {
-				userInfoStore.set({ authorized: false, id: '' });
+			loaded = true;
+		} else if (res.status === 401) {
+			await refreshToken();
+			if (!$userInfoStore.authorized) {
 				alert('login!');
 				goto('/user');
 			}
@@ -41,27 +41,33 @@
 	let lobbyName: string;
 	let lobbyPassword: string;
 
-	let createStatus: string = 'Create & Join';
+	let isCreating: boolean = false;
 
 	const createHandler = async () => {
-		createStatus = 'Loading...';
+		isCreating = true;
 
-		fetch(`${$API_URL}/game`, {
+		const res = await fetch(`${$API_URL}/game`, {
 			method: 'POST',
 			credentials: 'include',
 			body: JSON.stringify({
 				GameSessionName: lobbyName
 			})
-		})
-			.then((res) => res.json())
-			.then((data) => {
-				const { GameSessionId }: { GameSessionId: string } = data;
-				goto(`/game?gameId=${GameSessionId}`);
-			})
-			.catch((e) => {
-				console.log(e);
-				createStatus = 'Create & Join';
-			});
+		});
+
+		if (res.ok) {
+			const { GameSessionId }: { GameSessionId: string } = await res.json();
+			goto(`/game?gameId=${GameSessionId}`);
+		} else if (res.status === 401) {
+			await refreshToken();
+			if (!$userInfoStore.authorized) {
+				alert('login!');
+				goto('/user');
+			}
+		} else {
+			alert(res.statusText);
+		}
+
+		isCreating = false;
 	};
 </script>
 
@@ -70,7 +76,7 @@
 <form on:submit|preventDefault={createHandler}>
 	<p>Create Game Session</p>
 	<input type="text" placeholder="Name" bind:value={lobbyName} />
-	<button type="submit">{createStatus}</button>
+	<button type="submit">{isCreating ? 'Loading...' : 'Create & Join'}</button>
 </form>
 <hr />
 <div class="sessionsHeader">

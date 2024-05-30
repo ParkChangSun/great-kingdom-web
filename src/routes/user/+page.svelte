@@ -51,6 +51,7 @@
 		} else {
 			alert(res.statusText);
 		}
+		passwordInput = '';
 	};
 
 	let signUpId: string;
@@ -88,7 +89,7 @@
 </script>
 
 {#if $userInfoStore.id !== ''}
-	<p>Hello {$userInfoStore.id}</p>
+	<h2>{$userInfoStore.id}</h2>
 	<p>WINs : {userInfo.W}</p>
 	<p>LOSSes : {userInfo.L}</p>
 	<p>DRAWs : {userInfo.D}</p>
@@ -99,7 +100,7 @@
 		<input type="text" placeholder="Name" bind:value={idInput} />
 		<input type="password" placeholder="Password" bind:value={passwordInput} />
 		<button> Sign In </button>
-		<button type="button" on:click={() => (mode = !mode)}>Sign Up</button>
+		<button type="button" class="change" on:click={() => (mode = !mode)}>Sign Up</button>
 	</form>
 {:else}
 	<form on:submit|preventDefault={handleSignUp}>
@@ -108,7 +109,7 @@
 		<input type="password" placeholder="Password" bind:value={signUpPass} />
 		<input type="password" placeholder="Password again" bind:value={passConfirm} />
 		<button> Sign Up </button>
-		<button type="button" on:click={() => (mode = !mode)}> Sign In </button>
+		<button type="button" class="change" on:click={() => (mode = !mode)}> Sign In </button>
 	</form>
 {/if}
 
@@ -139,12 +140,16 @@
 	}
 
 	button {
-		background-color: aqua;
+		background-color: skyblue;
 		border: 0;
 		border-radius: 1rem;
 		height: 1.5rem;
 	}
 	.signout {
+		display: block;
 		margin: 0 auto;
+	}
+	.change {
+		background-color: orange;
 	}
 </style>

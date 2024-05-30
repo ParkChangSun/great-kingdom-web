@@ -27,9 +27,7 @@ export const refreshToken = async () => {
 	if (res.ok) {
 		const j = await res.json()
 		userInfoStore.set({ authorized: true, id: j.id })
-		return true;
 	} else {
 		userInfoStore.set({ authorized: false, id: '' });
-		return false;
 	}
 };
