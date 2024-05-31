@@ -114,7 +114,7 @@
 		>{game.PassFlag ? 'Opponent Passed' : 'Pass'}</button
 	>
 
-	<div id="lobbyinfo">
+	<div class="lobbyinfo">
 		<div class="gameInfo">
 			<p>Turn {game.Turn}</p>
 			{#if game.Turn === 0}
@@ -139,33 +139,41 @@
 		{/if}
 	</div>
 
-	<div>
-		<p>Players</p>
-		{#if players.length > 0}
-			<p class={game.Playing ? (players[0].UserId === game.PlayersId[0] ? 'blue' : 'orange') : ''}>
-				{players[0].UserId}
-			</p>
-		{:else}
-			<p>empty</p>
-		{/if}
-		{#if players.length > 1}
-			<p class={game.Playing ? (players[1].UserId === game.PlayersId[1] ? 'orange' : 'blue') : ''}>
-				{players[1].UserId}
-			</p>
-		{:else}
-			<div>empty</div>
-		{/if}
-		<p>Users</p>
-		<div class="users">
-			{#each currentConnections as c}
-				<p>{c.UserId}</p>
-			{/each}
+	<div class="users">
+		<div class="part">
+			<p>Players</p>
+			{#if players.length > 0}
+				<p
+					class={game.Playing ? (players[0].UserId === game.PlayersId[0] ? 'blue' : 'orange') : ''}
+				>
+					{players[0].UserId}
+				</p>
+			{:else}
+				<p>empty</p>
+			{/if}
+			{#if players.length > 1}
+				<p
+					class={game.Playing ? (players[1].UserId === game.PlayersId[1] ? 'orange' : 'blue') : ''}
+				>
+					{players[1].UserId}
+				</p>
+			{:else}
+				<div>empty</div>
+			{/if}
+		</div>
+		<div class="part">
+			<p>Users</p>
+			<div class="users">
+				{#each currentConnections as c}
+					<p>{c.UserId}</p>
+				{/each}
+			</div>
 		</div>
 	</div>
 </div>
 
 <style>
-	#lobbyinfo {
+	.lobbyinfo {
 		display: flex;
 		flex-direction: column;
 	}
@@ -185,11 +193,18 @@
 	}
 
 	.chat {
-		overflow: scroll;
-		height: 10rem;
+		overflow-y: scroll;
+		width: 10rem;
 		border: 3px solid black;
 		padding: 5px;
 		flex-grow: 1;
+	}
+
+	.user {
+		width: 10rem;
+	}
+	.part {
+		border: 3px solid black;
 	}
 
 	ul {

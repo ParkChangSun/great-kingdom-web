@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { API_URL, refreshToken, userInfoStore } from '$lib';
 	import { onMount } from 'svelte';
 
 	let chat: string[] = [];
@@ -39,5 +41,13 @@
 	{/each}
 </div>
 <form on:submit|preventDefault={sendChat}>
-	<input bind:value={chatInput} /><button type="submit" />
+	<input bind:value={chatInput} /><button type="submit">Chat</button>
 </form>
+
+<style>
+	div {
+		height: 30rem;
+		width: 100%;
+		border: 1px solid black;
+	}
+</style>
