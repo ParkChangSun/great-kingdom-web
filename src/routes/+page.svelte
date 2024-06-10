@@ -22,7 +22,7 @@ Game created by Lee Sedol, a former Go player who won a game against AlphaGo.
 <p>To defeat orange player, blue player must capture 3 or more territories than orange player.</p>
 <p>Made by changsun19991212@gmail.com</p>
 
-<p class="footer-content">Contact Me</p>
-<a href="mailto:changsun19991212@gmail.com">VIA EMAIL:changsun19991212@gmail.com</a>
-<br />
-<a href="https://github.com/ParkChangSun/great-kingdom-lambda">VIA GITHUB:ParkChangSun</a>
+<p class="footer-content">
+	If you have Issues/Suggestions, please comment in the <a href="/chat">CHAT</a>
+</p>
+<a href="https://github.com/ParkChangSun/great-kingdom-lambda">GITHUB</a>

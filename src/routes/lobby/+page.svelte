@@ -17,26 +17,22 @@
 			method: 'GET',
 			credentials: 'include'
 		});
-
 		if (res.ok) {
 			gameSessions = await res.json();
 			loaded = true;
 		} else if (res.status === 401) {
-			await refreshToken();
-			if (!$userInfoStore.authorized) {
-				alert('login!');
-				goto('/user');
-			}
+			refreshToken();
 		} else {
 			alert(res.statusText);
+			loaded = true;
 		}
-
-		loaded = true;
 	};
 
-	onMount(async () => {
+	$: if ($userInfoStore.authorized) {
 		getSessions();
-	});
+	} else {
+		goto('/user');
+	}
 
 	let lobbyName: string;
 	let lobbyPassword: string;
@@ -53,7 +49,6 @@
 				GameSessionName: lobbyName
 			})
 		});
-
 		if (res.ok) {
 			const { GameSessionId }: { GameSessionId: string } = await res.json();
 			goto(`/game?gameId=${GameSessionId}`);
@@ -69,6 +64,10 @@
 
 		isCreating = false;
 	};
+
+	onMount(() => {
+		loaded = false;
+	});
 </script>
 
 <p class="header">Main Lobby</p>

@@ -8,8 +8,8 @@
 
 	let chat: string[] = [];
 	let chatDiv: HTMLDivElement;
-	$: if (chat.length > 0) {
-		chatDiv.scroll({ top: chatDiv.scrollHeight });
+	$: if (chat && chatDiv) {
+		chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
 	}
 
 	let players: { UserId: string }[] = [];
@@ -141,7 +141,7 @@
 
 	<div class="users">
 		<div class="part">
-			<p>Players</p>
+			<b>Players</b>
 			{#if players.length > 0}
 				<p
 					class={game.Playing ? (players[0].UserId === game.PlayersId[0] ? 'blue' : 'orange') : ''}
@@ -162,7 +162,7 @@
 			{/if}
 		</div>
 		<div class="part">
-			<p>Users</p>
+			<b>Users</b>
 			<div class="users">
 				{#each currentConnections as c}
 					<p>{c.UserId}</p>
@@ -194,7 +194,6 @@
 
 	.chat {
 		overflow-y: scroll;
-		width: 10rem;
 		border: 3px solid black;
 		padding: 5px;
 		flex-grow: 1;
@@ -202,9 +201,16 @@
 
 	.user {
 		width: 10rem;
+		padding: 1rem;
 	}
 	.part {
 		border: 3px solid black;
+	}
+	.part > p {
+		margin: 0;
+	}
+	.part > b {
+		margin: 0;
 	}
 
 	ul {

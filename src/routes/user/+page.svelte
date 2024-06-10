@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { userInfoStore, API_URL, refreshToken } from '$lib';
+	import { onMount } from 'svelte';
 
 	type UserInfo = {
 		W: number;
@@ -10,27 +10,30 @@
 	let userInfo: UserInfo = { W: 0, L: 0, D: 0 };
 	let loaded = false;
 
-	// maybe getuser does not need auth
 	const getUserInfo = async () => {
+		loaded = false;
 		const res = await fetch(`${$API_URL}/user?UserId=${$userInfoStore.id}`, {
 			method: 'GET',
 			credentials: 'include'
 		});
 		if (res.ok) {
 			userInfo = await res.json();
+			loaded = true;
+		} else if (res.status === 401) {
+			await refreshToken();
 		} else {
 			throw new Error(res.status.toString());
 		}
 	};
 
-	$: if ($userInfoStore.id !== '') {
-		loaded = false;
+	onMount(() => {
+		if ($userInfoStore.authorized) {
+			getUserInfo();
+		}
+	});
 
-		getUserInfo().catch((err) => {
-			console.log(err);
-		});
-
-		loaded = true;
+	$: if ($userInfoStore.authorized) {
+		getUserInfo();
 	}
 
 	let idInput: string;
@@ -88,12 +91,16 @@
 	let mode = true;
 </script>
 
-{#if $userInfoStore.id !== ''}
-	<h2>{$userInfoStore.id}</h2>
-	<p>WINs : {userInfo.W}</p>
-	<p>LOSSes : {userInfo.L}</p>
-	<p>DRAWs : {userInfo.D}</p>
-	<button on:click={handleSignOut} class="signout">Sign Out</button>
+{#if $userInfoStore.authorized}
+	{#if loaded}
+		<h2>{$userInfoStore.id}</h2>
+		<p>WINs : {userInfo.W}</p>
+		<p>LOSSes : {userInfo.L}</p>
+		<p>DRAWs : {userInfo.D}</p>
+		<button on:click={handleSignOut} class="signout">Sign Out</button>
+	{:else}
+		<img src="./loading.webp" alt="loading" class="center" />
+	{/if}
 {:else if mode}
 	<form on:submit|preventDefault={handleSignin}>
 		<p>Sign In</p>
@@ -111,6 +118,7 @@
 		<button> Sign Up </button>
 		<button type="button" class="change" on:click={() => (mode = !mode)}> Sign In </button>
 	</form>
+	<p>No personal infos required.</p>
 {/if}
 
 <style>
@@ -151,5 +159,10 @@
 	}
 	.change {
 		background-color: orange;
+	}
+
+	.center {
+		display: block;
+		margin: 0 auto;
 	}
 </style>

@@ -1,31 +1,50 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { API_URL, refreshToken, userInfoStore } from '$lib';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 
 	let chat: string[] = [];
 	let chatDiv: HTMLDivElement;
-	$: if (chat.length > 0) {
-		chatDiv.scroll({ top: chatDiv.scrollHeight });
+	$: if (chat && chatDiv) {
+		chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
 	}
+	const addChat = (msg: string) => {
+		chat = [...chat, msg];
+	};
 
 	let socket: WebSocket;
+	const connectSocket = () => {
+		socket = new WebSocket(`wss://websocket.greatkingdom.net?GameSessionId=globalchat`);
 
-	onMount(() => {
-		socket = new WebSocket(`wss://websocket.greatkingdom.net?GameSessionId=global`);
 		socket.addEventListener('open', () => {
 			console.log('Opened');
+			addChat('connected.');
 		});
 		socket.addEventListener('close', (e) => {
 			console.log(e);
 		});
 		socket.addEventListener('error', (e) => {
 			console.log(e);
+			refreshToken();
+			addChat('refreshing...');
 		});
 		socket.addEventListener('message', (e) => {
 			const data = JSON.parse(e.data);
 			chat = [...chat, data.Chat];
 		});
+	};
+
+	$: if ($userInfoStore.authorized) {
+		addChat('connecting...');
+		connectSocket();
+	} else {
+		goto('/user');
+	}
+
+	onDestroy(() => {
+		if (socket) {
+			socket.close();
+		}
 	});
 
 	let chatInput: string;
@@ -37,7 +56,7 @@
 
 <div bind:this={chatDiv} class="chat">
 	{#each chat as c}
-		<li>{c}</li>
+		<p>{c}</p>
 	{/each}
 </div>
 <form on:submit|preventDefault={sendChat}>
@@ -49,5 +68,10 @@
 		height: 30rem;
 		width: 100%;
 		border: 1px solid black;
+		overflow-y: scroll;
+	}
+
+	p {
+		margin: 0;
 	}
 </style>
