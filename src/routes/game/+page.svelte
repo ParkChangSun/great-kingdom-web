@@ -34,6 +34,8 @@
 
 	let socket: WebSocket;
 
+	let pingpong: NodeJS.Timeout;
+
 	onMount(async () => {
 		socket = new WebSocket(
 			`wss://websocket.greatkingdom.net?GameSessionId=${$page.url.searchParams.get('gameId')}`
@@ -43,14 +45,15 @@
 		});
 		socket.addEventListener('close', (e) => {
 			console.log(e);
-			// goto('/lobby');
 		});
 		socket.addEventListener('error', (e) => {
 			console.log(e);
 		});
 		socket.addEventListener('message', (e) => {
 			const data = JSON.parse(e.data);
-			if (data.EventType === 'CHAT') {
+			if (data.EventType === 'pong') {
+				console.log('pong');
+			} else if (data.EventType === 'CHAT') {
 				chat = [...chat, data.Chat];
 			} else if (data.EventType === 'GAME') {
 				game = data.Game;
@@ -59,10 +62,19 @@
 				currentConnections = data.CurrentConnections;
 			}
 		});
+
+		pingpong = setInterval(() => {
+			if (socket) {
+				socket.send(JSON.stringify({ action: 'ping' }));
+			}
+		}, 300000);
 	});
 
 	onDestroy(() => {
-		socket.close();
+		clearInterval(pingpong);
+		if (socket) {
+			socket.close();
+		}
 	});
 
 	beforeNavigate((e) => {

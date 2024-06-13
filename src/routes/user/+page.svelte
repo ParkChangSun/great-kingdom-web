@@ -12,6 +12,7 @@
 
 	const getUserInfo = async () => {
 		loaded = false;
+
 		const res = await fetch(`${$API_URL}/user?UserId=${$userInfoStore.id}`, {
 			method: 'GET',
 			credentials: 'include'
@@ -52,7 +53,7 @@
 			const jsonBody = await res.json();
 			userInfoStore.set({ authorized: true, id: jsonBody.Id });
 		} else {
-			alert(res.statusText);
+			alert(res.text());
 		}
 		passwordInput = '';
 	};
@@ -76,7 +77,7 @@
 			signUpPass = '';
 			passConfirm = '';
 		} else {
-			alert('Sign Up Failed');
+			alert(`Sign Up Failed : ${await res.text()}`);
 		}
 	};
 
@@ -93,7 +94,7 @@
 
 {#if $userInfoStore.authorized}
 	{#if loaded}
-		<h2>{$userInfoStore.id}</h2>
+		<p class="name">{$userInfoStore.id}</p>
 		<p>WINs : {userInfo.W}</p>
 		<p>LOSSes : {userInfo.L}</p>
 		<p>DRAWs : {userInfo.D}</p>
@@ -118,7 +119,8 @@
 		<button> Sign Up </button>
 		<button type="button" class="change" on:click={() => (mode = !mode)}> Sign In </button>
 	</form>
-	<p>No personal infos required.</p>
+	<p class="small">The password should contain a combination of 6 to 30 letters and numbers.</p>
+	<p class="small">No personal infos required.</p>
 {/if}
 
 <style>
@@ -126,6 +128,13 @@
 		margin: 0 auto;
 		width: 20rem;
 		text-align: center;
+		font-size: 2rem;
+	}
+	.name {
+		font-size: 2rem;
+	}
+	.small {
+		font-size: 1rem;
 	}
 
 	form {

@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
-import { readonly, writable } from 'svelte/store';
+import { derived, readonly, writable } from 'svelte/store';
+import translations from './translation'
 
 type UserInfo = {
 	authorized: boolean;
@@ -31,3 +32,18 @@ export const refreshToken = async () => {
 		userInfoStore.set({ authorized: false, id: '' });
 	}
 };
+
+export const locale = writable("en");
+export const i18n = derived(locale, ($locale) => (exprKey: string, vars: string[]) => {
+	if (!exprKey) return 'i18n error no exprkey'
+	if (!$locale) return 'i18n error no locale'
+
+	let text = translations.get($locale)?.get(exprKey) ?? ""
+	if (!text) return 'i18n error no text'
+
+	vars.map((k, n) => {
+		const regex = new RegExp(`{{${n}}}`, "g");
+		text = text.replace(regex, k);
+	});
+	return text
+})

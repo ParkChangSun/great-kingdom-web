@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { API_URL, refreshToken, userInfoStore } from '$lib';
+	import { time } from 'console';
 	import { onDestroy, onMount } from 'svelte';
 
 	let chat: string[] = [];
@@ -15,7 +16,6 @@
 	let socket: WebSocket;
 	const connectSocket = () => {
 		socket = new WebSocket(`wss://websocket.greatkingdom.net?GameSessionId=globalchat`);
-
 		socket.addEventListener('open', () => {
 			console.log('Opened');
 			addChat('connected.');
@@ -29,8 +29,21 @@
 			addChat('refreshing...');
 		});
 		socket.addEventListener('message', (e) => {
-			const data = JSON.parse(e.data);
-			chat = [...chat, data.Chat];
+			type Data = {
+				EventType: string;
+				Messages: { Chat: string }[];
+				Chat: string;
+			};
+			const data: Data = JSON.parse(e.data);
+			if (data.EventType === 'pong') {
+				console.log('pong');
+			} else if (data.EventType === 'lastchat') {
+				data.Messages.forEach((e) => {
+					chat = [...chat, e.Chat];
+				});
+			} else {
+				chat = [...chat, data.Chat];
+			}
 		});
 	};
 
@@ -41,17 +54,27 @@
 		goto('/user');
 	}
 
-	onDestroy(() => {
-		if (socket) {
-			socket.close();
-		}
-	});
-
 	let chatInput: string;
 	const sendChat = async () => {
 		socket.send(JSON.stringify({ action: 'globalchat', Chat: chatInput }));
 		chatInput = '';
 	};
+
+	let pingpong: NodeJS.Timeout;
+	onMount(() => {
+		pingpong = setInterval(() => {
+			if (socket) {
+				socket.send(JSON.stringify({ action: 'ping' }));
+			}
+		}, 300000);
+	});
+
+	onDestroy(() => {
+		clearInterval(pingpong);
+		if (socket) {
+			socket.close();
+		}
+	});
 </script>
 
 <div bind:this={chatDiv} class="chat">
