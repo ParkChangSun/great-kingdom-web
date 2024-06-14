@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { API_URL, refreshToken, userInfoStore } from '$lib';
 	import { onDestroy, onMount } from 'svelte';
@@ -28,10 +29,12 @@
 		}
 	};
 
-	$: if ($userInfoStore.authorized) {
-		getSessions();
-	} else {
-		goto('/user');
+	$: if (browser) {
+		if ($userInfoStore.authorized) {
+			getSessions();
+		} else {
+			goto('/user');
+		}
 	}
 
 	let lobbyName: string;

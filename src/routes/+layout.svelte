@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { refreshToken, userInfoStore } from '$lib';
+	import { locale, refreshToken, userInfoStore } from '$lib';
 	import { onMount } from 'svelte';
 
 	const navbar = [
@@ -18,6 +18,11 @@
 <div class="header">
 	<h1>Great Kingdom</h1>
 	<nav>
+		<label for="locale">Language</label>
+		<select bind:value={$locale} id="locale">
+			<option value="kr">kr</option>
+			<option value="en">en</option>
+		</select>
 		{#each navbar as n}
 			<a href={n.url} class:active={$page.url.pathname === n.url}>{n.route}</a>
 		{/each}
@@ -52,5 +57,10 @@
 	}
 	.active {
 		background-color: orange;
+	}
+
+	label,
+	select {
+		align-self: center;
 	}
 </style>

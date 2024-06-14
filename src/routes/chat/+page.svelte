@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { API_URL, refreshToken, userInfoStore } from '$lib';
-	import { time } from 'console';
 	import { onDestroy, onMount } from 'svelte';
 
 	let chat: string[] = [];
@@ -47,11 +47,13 @@
 		});
 	};
 
-	$: if ($userInfoStore.authorized) {
-		addChat('connecting...');
-		connectSocket();
-	} else {
-		goto('/user');
+	$: if (browser) {
+		if ($userInfoStore.authorized) {
+			addChat('connecting...');
+			connectSocket();
+		} else {
+			goto('/user');
+		}
 	}
 
 	let chatInput: string;
