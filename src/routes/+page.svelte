@@ -4,7 +4,7 @@
 
 <svelte:head>
 	<title>Great Kingdom</title>
-	<meta name="description" content="great kingdom" />
+	<meta name="description" content="Great Kingdom: Online board game" />
 	<meta name="keywords" content="great kingdom" />
 </svelte:head>
 

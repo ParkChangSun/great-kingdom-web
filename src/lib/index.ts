@@ -9,13 +9,15 @@ type UserInfo = {
 let initValue: UserInfo = { authorized: false, id: '' };
 export const userInfoStore = writable(initValue);
 
-if (browser) {
-	const initStorage = localStorage.getItem('userInfo');
-	if (initStorage) {
-		userInfoStore.set(JSON.parse(initStorage));
-	}
-	userInfoStore.subscribe((value) => localStorage.setItem('userInfo', JSON.stringify(value)));
-}
+// if (browser) {
+// 	console.log('browser');
+
+// 	const initStorage = localStorage.getItem('userInfo');
+// 	if (initStorage) {
+// 		userInfoStore.set(JSON.parse(initStorage));
+// 	}
+// 	userInfoStore.subscribe((value) => localStorage.setItem('userInfo', JSON.stringify(value)));
+// }
 
 const _API_URL = writable('https://api.greatkingdom.net');
 export const API_URL = readonly(_API_URL);
