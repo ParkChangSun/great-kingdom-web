@@ -13,6 +13,8 @@
 		chat = [...chat, msg];
 	};
 
+	let lastScroll: number;
+
 	let socket: WebSocket;
 	const connectSocket = () => {
 		socket = new WebSocket(`wss://websocket.greatkingdom.net?GameSessionId=globalchat`);
@@ -33,11 +35,13 @@
 				EventType: string;
 				Messages: { Chat: string }[];
 				Chat: string;
+				LastScroll: number;
 			};
 			const data: Data = JSON.parse(e.data);
 			if (data.EventType === 'pong') {
 				console.log('pong');
 			} else if (data.EventType === 'lastchat') {
+				lastScroll = data.LastScroll;
 				data.Messages.forEach((e) => {
 					chat = [...chat, e.Chat];
 				});
@@ -63,12 +67,18 @@
 	};
 
 	let pingpong: NodeJS.Timeout;
+	const sendScrollEvent = () => {};
 	onMount(() => {
 		pingpong = setInterval(() => {
 			if (socket) {
 				socket.send(JSON.stringify({ action: 'ping' }));
 			}
 		}, 300000);
+		chatDiv.addEventListener('scrollend', (e) => {
+			if (chatDiv.scrollTop === 0) {
+				sendScrollEvent();
+			}
+		});
 	});
 
 	onDestroy(() => {

@@ -6,6 +6,7 @@
 	<title>Great Kingdom</title>
 	<meta name="description" content="Great Kingdom: Online board game" />
 	<meta name="keywords" content="great kingdom" />
+	<meta charset="UTF-8" />
 </svelte:head>
 
 <h2>{$i18n('home.rules.title', [])}</h2>

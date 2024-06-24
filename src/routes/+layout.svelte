@@ -8,7 +8,7 @@
 		{ route: 'CHAT', url: '/chat' },
 		{ route: 'PLAY', url: '/lobby' }
 	];
-	$: user = $userInfoStore.id === '' ? 'LOG IN' : $userInfoStore.id;
+	$: user = $userInfoStore.authorized ? $userInfoStore.id : 'LOG IN';
 
 	onMount(() => {
 		refreshToken();
