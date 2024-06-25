@@ -2,7 +2,7 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { API_URL, refreshToken, userInfoStore } from '$lib';
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
 
 	let chat: string[] = [];
 	let chatDiv: HTMLDivElement;
@@ -14,6 +14,7 @@
 	};
 
 	let lastScroll: number;
+	let scrollLoading = false;
 
 	let socket: WebSocket;
 	const connectSocket = () => {
@@ -30,7 +31,7 @@
 			refreshToken();
 			addChat('refreshing...');
 		});
-		socket.addEventListener('message', (e) => {
+		socket.addEventListener('message', async (e) => {
 			type Data = {
 				EventType: string;
 				Messages: { Chat: string }[];
@@ -42,11 +43,21 @@
 				console.log('pong');
 			} else if (data.EventType === 'lastchat') {
 				lastScroll = data.LastScroll;
-				data.Messages.forEach((e) => {
+				data.Messages.reverse().forEach((e) => {
 					chat = [...chat, e.Chat];
 				});
+				await tick();
+				chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
+			} else if (data.EventType === 'scroll') {
+				lastScroll = data.LastScroll;
+				data.Messages.forEach((e) => {
+					chat = [e.Chat, ...chat];
+				});
+				scrollLoading = false;
 			} else {
 				chat = [...chat, data.Chat];
+				await tick();
+				chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
 			}
 		});
 	};
@@ -67,7 +78,6 @@
 	};
 
 	let pingpong: NodeJS.Timeout;
-	const sendScrollEvent = () => {};
 	onMount(() => {
 		pingpong = setInterval(() => {
 			if (socket) {
@@ -75,8 +85,9 @@
 			}
 		}, 300000);
 		chatDiv.addEventListener('scrollend', (e) => {
-			if (chatDiv.scrollTop === 0) {
-				sendScrollEvent();
+			if (chatDiv.scrollTop === 0 && lastScroll !== 0 && !scrollLoading) {
+				socket.send(JSON.stringify({ action: 'scroll', LastScroll: lastScroll }));
+				scrollLoading = true;
 			}
 		});
 	});

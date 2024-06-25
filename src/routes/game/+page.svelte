@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { afterUpdate, onDestroy, onMount } from 'svelte';
+	import { afterUpdate, onDestroy, onMount, tick } from 'svelte';
 	import { userInfoStore } from '$lib';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/stores';
@@ -8,9 +8,6 @@
 
 	let chat: string[] = [];
 	let chatDiv: HTMLDivElement;
-	$: if (chat && chatDiv) {
-		chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
-	}
 
 	let players: { UserId: string }[] = [];
 	let currentConnections: { UserId: string }[] = [];
@@ -49,12 +46,14 @@
 		socket.addEventListener('error', (e) => {
 			console.log(e);
 		});
-		socket.addEventListener('message', (e) => {
+		socket.addEventListener('message', async (e) => {
 			const data = JSON.parse(e.data);
 			if (data.EventType === 'pong') {
 				console.log('pong');
 			} else if (data.EventType === 'CHAT') {
 				chat = [...chat, data.Chat];
+				await tick();
+				chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
 			} else if (data.EventType === 'GAME') {
 				game = data.Game;
 			} else if (data.EventType === 'USER') {
