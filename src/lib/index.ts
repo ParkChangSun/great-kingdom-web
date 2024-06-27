@@ -36,7 +36,7 @@ export const refreshToken = async () => {
 };
 
 export const locale = writable("en");
-export const i18n = derived(locale, ($locale) => (exprKey: string, vars: string[]) => {
+export const i18n = derived(locale, ($locale) => (exprKey: string, vars: string[] = []) => {
 	if (!exprKey) return 'i18n error no exprkey'
 	if (!$locale) return 'i18n error no locale'
 

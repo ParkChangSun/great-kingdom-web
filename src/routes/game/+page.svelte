@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { afterUpdate, onDestroy, onMount, tick } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import { userInfoStore } from '$lib';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/stores';
 
-	let lobbyName: string = '';
+	let lobbyName = '';
+	let lobbyId = '';
 
 	let chat: string[] = [];
 	let chatDiv: HTMLDivElement;
@@ -34,11 +35,14 @@
 	let pingpong: NodeJS.Timeout;
 
 	onMount(async () => {
+		chat = ['connecting...'];
+
 		socket = new WebSocket(
 			`wss://websocket.greatkingdom.net?GameSessionId=${$page.url.searchParams.get('gameId')}`
 		);
 		socket.addEventListener('open', () => {
 			console.log('Opened');
+			chat = [...chat, 'connected.'];
 		});
 		socket.addEventListener('close', (e) => {
 			console.log(e);
@@ -59,6 +63,8 @@
 			} else if (data.EventType === 'USER') {
 				players = data.Players;
 				currentConnections = data.CurrentConnections;
+				lobbyName = data.GameSessionName;
+				lobbyId = data.GameSessionId;
 			}
 		});
 
@@ -102,7 +108,8 @@
 	};
 </script>
 
-<p>{lobbyName}</p>
+<h2 class="name">{lobbyName}</h2>
+<p>{lobbyId}</p>
 <div id="game">
 	<table class={tableBorder}>
 		{#each game.Board as r, i}
@@ -122,7 +129,7 @@
 		{/each}
 	</table>
 	<button on:click={doPassMove} disabled={game.PlayersId[(game.Turn - 1) % 2] !== $userInfoStore.id}
-		>{game.PassFlag ? 'Opponent Passed' : 'Pass'}</button
+		>{game.Playing && game.PassFlag ? 'Opponent Passed' : 'Pass'}</button
 	>
 
 	<div class="lobbyinfo">
@@ -135,11 +142,9 @@
 			{/if}
 		</div>
 		<div bind:this={chatDiv} class="chat">
-			<ul>
-				{#each chat as c}
-					<li>{c}</li>
-				{/each}
-			</ul>
+			{#each chat as c}
+				<p class="chatmsg">{c}</p>
+			{/each}
 		</div>
 		<form on:submit|preventDefault={sendMessage}>
 			<input type="text" bind:value={chatInput} />
@@ -169,12 +174,12 @@
 					{players[1].UserId}
 				</p>
 			{:else}
-				<div>empty</div>
+				<p>empty</p>
 			{/if}
 		</div>
 		<div class="part">
 			<b>Users</b>
-			<div class="users">
+			<div>
 				{#each currentConnections as c}
 					<p>{c.UserId}</p>
 				{/each}
@@ -184,9 +189,14 @@
 </div>
 
 <style>
+	.name {
+		margin-bottom: 0;
+	}
+
 	.lobbyinfo {
 		display: flex;
 		flex-direction: column;
+		width: 20rem;
 	}
 
 	.gameInfo {
@@ -207,7 +217,10 @@
 		overflow-y: scroll;
 		border: 3px solid black;
 		padding: 5px;
-		flex-grow: 1;
+		height: 25rem;
+	}
+	.chat > p {
+		overflow-wrap: break-word;
 	}
 
 	.user {
@@ -217,16 +230,11 @@
 	.part {
 		border: 3px solid black;
 	}
-	.part > p {
-		margin: 0;
-	}
 	.part > b {
 		margin: 0;
 	}
 
-	ul {
-		list-style-type: none;
-		padding: 0;
+	.chatmsg {
 		margin: 0;
 	}
 
