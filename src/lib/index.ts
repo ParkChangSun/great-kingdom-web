@@ -49,3 +49,14 @@ export const i18n = derived(locale, ($locale) => (exprKey: string, vars: string[
 	});
 	return text
 })
+
+export const i18 = (locale: string) => (exprKey: string, vars: string[] = []) => {
+	let text = translations.get(locale)?.get(exprKey) ?? ""
+	if (!text) return 'i18n error no text'
+
+	vars.map((k, n) => {
+		const regex = new RegExp(`{{${n}}}`, "g");
+		text = text.replace(regex, k);
+	});
+	return text
+}

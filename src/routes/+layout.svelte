@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { locale, refreshToken, userInfoStore } from '$lib';
 	import { onMount } from 'svelte';
@@ -13,10 +14,12 @@
 	onMount(() => {
 		refreshToken();
 	});
+
+	$locale = $page.url.searchParams.get('lang') ?? 'en';
 </script>
 
 <div class="header">
-	<h1>Great Kingdom</h1>
+	<h1>Great Kingdom Online</h1>
 	<nav>
 		<label for="locale">Language</label>
 		<select bind:value={$locale} id="locale">
@@ -24,9 +27,15 @@
 			<option value="en">en</option>
 		</select>
 		{#each navbar as n}
-			<a href={n.url} class:active={$page.url.pathname === n.url}>{n.route}</a>
+			<a
+				href={`${n.url}${$locale === 'en' ? '' : `?lang=${$locale}`}`}
+				class:active={$page.url.pathname === n.url}>{n.route}</a
+			>
 		{/each}
-		<a href="/user" class:active={$page.url.pathname === '/user'}>{user}</a>
+		<a
+			href={`/user${$locale === 'en' ? '' : `?lang=${$locale}`}`}
+			class:active={$page.url.pathname === '/user'}>{user}</a
+		>
 	</nav>
 </div>
 

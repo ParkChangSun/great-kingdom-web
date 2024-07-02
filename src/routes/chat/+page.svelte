@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { API_URL, refreshToken, userInfoStore } from '$lib';
+	import { API_URL, locale, refreshToken, userInfoStore } from '$lib';
 	import { onDestroy, onMount, tick } from 'svelte';
 
 	let chat: string[] = [];
@@ -67,7 +67,7 @@
 			addChat('connecting...');
 			connectSocket();
 		} else {
-			goto('/user');
+			goto(`/user${$locale === 'en' ? '' : `?lang=${$locale}`}`);
 		}
 	}
 

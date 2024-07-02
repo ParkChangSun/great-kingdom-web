@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { API_URL, refreshToken, userInfoStore } from '$lib';
+	import { API_URL, locale, refreshToken, userInfoStore } from '$lib';
 	import { onDestroy, onMount } from 'svelte';
 
 	type GameSession = {
@@ -33,7 +33,7 @@
 		if ($userInfoStore.authorized) {
 			getSessions();
 		} else {
-			goto('/user');
+			goto(`/user${$locale === 'en' ? '' : `?lang=${$locale}`}`);
 		}
 	}
 
@@ -59,7 +59,7 @@
 			await refreshToken();
 			if (!$userInfoStore.authorized) {
 				alert('login!');
-				goto('/user');
+				goto(`/user${$locale === 'en' ? '' : `?lang=${$locale}`}`);
 			}
 		} else {
 			alert(res.statusText);
