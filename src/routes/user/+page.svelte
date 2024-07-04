@@ -108,8 +108,8 @@
 		<input type="text" placeholder="Name" bind:value={idInput} />
 		<input type="password" placeholder="Password" bind:value={passwordInput} />
 		<button> Sign In </button>
-		<button type="button" class="change" on:click={() => (mode = !mode)}>Sign Up</button>
 	</form>
+	<button type="button" class="change" on:click={() => (mode = !mode)}>Sign Up</button>
 {:else}
 	<form on:submit|preventDefault={handleSignUp}>
 		<p>Sign Up</p>
@@ -117,9 +117,10 @@
 		<input type="password" placeholder="Password" bind:value={signUpPass} />
 		<input type="password" placeholder="Password again" bind:value={passConfirm} />
 		<button> Sign Up </button>
-		<button type="button" class="change" on:click={() => (mode = !mode)}> Sign In </button>
 	</form>
-	<p class="small">The password should contain a combination of 6 to 30 letters and numbers.</p>
+	<button type="button" class="change" on:click={() => (mode = !mode)}> Sign In </button>
+	<p class="small">The id should contain a combination of 6 to 30 letters and numbers.</p>
+	<p class="small">The password should contain a combination of 6 to 30 characters.</p>
 	<p class="small">No personal infos required.</p>
 {/if}
 

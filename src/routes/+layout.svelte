@@ -12,10 +12,9 @@
 	$: user = $userInfoStore.authorized ? $userInfoStore.id : 'LOG IN';
 
 	onMount(() => {
+		$locale = $page.url.searchParams.get('lang') ?? 'en';
 		refreshToken();
 	});
-
-	$locale = $page.url.searchParams.get('lang') ?? 'en';
 </script>
 
 <div class="header">

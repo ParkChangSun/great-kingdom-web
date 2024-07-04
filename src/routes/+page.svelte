@@ -1,16 +1,16 @@
 <script>
-	import { i18n } from '$lib';
+	import { page } from '$app/stores';
+	import { i18n, locale } from '$lib';
+	import { onMount } from 'svelte';
+
+	onMount(() => {
+		$locale = $page.url.searchParams.get('lang') ?? 'en';
+	});
 </script>
 
 <svelte:head>
-	<title>Great Kingdom Online</title>
-	<meta
-		name="description"
-		content="Great Kingdom simplifies Go
-	without taking the fun away for experienced players, making it the perfect gateway into the world of
-	Go. It is the first of three games of the game series WIZSTONE, developed by Go grandmaster
-	Lee Sedol. You can play Great Kingdom with players worldwide for free."
-	/>
+	<title>{$i18n('title')}</title>
+	<meta name="description" content={$i18n('description')} />
 	<meta name="keywords" content="great kingdom" />
 	<meta charset="UTF-8" />
 	<meta name="rating" content="Safe For Kids" />
