@@ -13,6 +13,7 @@
 	let players: { UserId: string }[] = [];
 	let currentConnections: { UserId: string }[] = [];
 	$: isHost = players.length > 0 && $userInfoStore.id === players[0].UserId;
+	$: isChallenger = players.length > 1 && $userInfoStore.id === players[1].UserId;
 
 	type Game = {
 		Board: number[][];
@@ -106,6 +107,10 @@
 	const doPassMove = () => {
 		socket.send(JSON.stringify({ action: 'move', Pass: true }));
 	};
+
+	const movePlayerSlot = () => {
+		socket.send(JSON.stringify({ action: 'slot' }));
+	};
 </script>
 
 <h2 class="name">{lobbyName}</h2>
@@ -150,9 +155,10 @@
 			<input type="text" bind:value={chatInput} />
 			<button>CHAT</button>
 		</form>
-		{#if isHost}
-			<button on:click={startGame}>start</button>
-		{/if}
+		<button on:click={startGame} disabled={!isHost || players.length !== 2}>start</button>
+		<button on:click={movePlayerSlot}
+			>Move to {isHost || isChallenger ? 'spectators' : 'players'}</button
+		>
 	</div>
 
 	<div class="users">
@@ -162,7 +168,7 @@
 				<p
 					class={game.Playing ? (players[0].UserId === game.PlayersId[0] ? 'blue' : 'orange') : ''}
 				>
-					{players[0].UserId}
+					👑 {players[0].UserId}
 				</p>
 			{:else}
 				<p>empty</p>
@@ -171,7 +177,7 @@
 				<p
 					class={game.Playing ? (players[1].UserId === game.PlayersId[1] ? 'orange' : 'blue') : ''}
 				>
-					{players[1].UserId}
+					🕹️ {players[1].UserId}
 				</p>
 			{:else}
 				<p>empty</p>

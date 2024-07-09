@@ -43,6 +43,9 @@
 	let isCreating: boolean = false;
 
 	const createHandler = async () => {
+		if (lobbyName === '') {
+			return;
+		}
 		isCreating = true;
 
 		const res = await fetch(`${$API_URL}/game`, {

@@ -97,7 +97,6 @@
 		<p class="name">{$userInfoStore.id}</p>
 		<p>WINs : {userInfo.W}</p>
 		<p>LOSSes : {userInfo.L}</p>
-		<p>DRAWs : {userInfo.D}</p>
 		<button on:click={handleSignOut} class="signout">Sign Out</button>
 	{:else}
 		<img src="./loading.webp" alt="loading" class="center" />
@@ -168,6 +167,9 @@
 		margin: 0 auto;
 	}
 	.change {
+		margin: auto;
+		display: block;
+		width: 20rem;
 		background-color: orange;
 	}
 
