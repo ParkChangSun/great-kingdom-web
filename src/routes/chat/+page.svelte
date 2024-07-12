@@ -57,7 +57,9 @@
 			} else {
 				chat = [...chat, data.Chat];
 				await tick();
-				chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
+				if (chatDiv.scrollTop + chatDiv.clientHeight + 24 >= chatDiv.scrollHeight) {
+					chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
+				}
 			}
 		});
 	};

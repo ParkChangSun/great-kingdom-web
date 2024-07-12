@@ -43,7 +43,7 @@
 		);
 		socket.addEventListener('open', () => {
 			console.log('Opened');
-			chat = [...chat, 'connected.'];
+			chat = [...chat, 'connected.', 'waiting for game sync...'];
 		});
 		socket.addEventListener('close', (e) => {
 			console.log(e);
@@ -58,7 +58,9 @@
 			} else if (data.EventType === 'CHAT') {
 				chat = [...chat, data.Chat];
 				await tick();
-				chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
+				if (chatDiv.scrollTop + chatDiv.clientHeight + 24 >= chatDiv.scrollHeight) {
+					chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
+				}
 			} else if (data.EventType === 'GAME') {
 				game = data.Game;
 			} else if (data.EventType === 'USER') {
@@ -184,10 +186,12 @@
 			{/if}
 		</div>
 		<div class="part">
-			<b>Users</b>
+			<b>Spectators</b>
 			<div>
 				{#each currentConnections as c}
-					<p>{c.UserId}</p>
+					{#if !players.some((e) => e.UserId === c.UserId)}
+						<p>{c.UserId}</p>
+					{/if}
 				{/each}
 			</div>
 		</div>
