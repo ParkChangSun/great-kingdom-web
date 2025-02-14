@@ -6,7 +6,7 @@
 
 	const navbar = [
 		{ route: 'HOME', url: '/' },
-		{ route: 'CHAT', url: '/chat' },
+		// { route: 'CHAT', url: '/chat' },
 		{ route: 'PLAY', url: '/lobby' }
 	];
 	$: user = $userInfoStore.authorized ? $userInfoStore.id : 'LOG IN';
@@ -38,7 +38,9 @@
 	</nav>
 </div>
 
-<slot />
+<div class="body">
+	<slot />
+</div>
 
 <div class="footer" />
 
@@ -70,5 +72,14 @@
 	label,
 	select {
 		align-self: center;
+	}
+
+	.body {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		min-height: 100vh;
+		margin: 0;
+		background-color: #f4f4f4;
 	}
 </style>

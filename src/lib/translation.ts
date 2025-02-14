@@ -28,7 +28,6 @@ const translations: Map<string, Map<string, string>> = new Map([
 
         ["home.about.1", `"Great Kingdom" is owned by ⓒ KOREA BOARDGAMES worldwide under a contract with Lee Se-dol.`],
         ["home.about.2", "This project is non-profit."],
-        ["home.about.3", `If you have Issues/Suggestions, please comment in the <a href="/chat">CHAT</a>`],
     ])],
     ["kr", new Map([
         ['title', "그레이트 킹덤 온라인"],
@@ -58,7 +57,6 @@ const translations: Map<string, Map<string, string>> = new Map([
         ["home.rulestitle", ""],
         ["home.about.1", `"그레이트 킹덤"은 작가 이세돌과의 계약에 따라 (주)코리아보드게임즈가 전 세계 독점 판권을 소유하고 있습니다.`],
         ["home.about.2", "이 프로젝트는 수익이 발생하지 않습니다."],
-        ["home.about.3", `이슈/제안사항이 있으시면 <a href="/chat">채팅</a>에 남겨주시기 바랍니다.`],
     ])]
 ])
 

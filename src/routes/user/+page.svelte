@@ -3,66 +3,77 @@
 	import { onMount } from 'svelte';
 
 	type UserInfo = {
+		UserId: string;
 		W: number;
 		L: number;
-		D: number;
+		RecentGames: {
+			BlueId: string;
+			OrangeId: string;
+			WinnerId: string;
+		}[];
 	};
-	let userInfo: UserInfo = { W: 0, L: 0, D: 0 };
-	let loaded = false;
+	let getUserPromise: Promise<UserInfo>;
 
 	const getUserInfo = async () => {
-		loaded = false;
-
 		const res = await fetch(`${$API_URL}/user?UserId=${$userInfoStore.id}`, {
 			method: 'GET',
 			credentials: 'include'
 		});
 		if (res.ok) {
-			userInfo = await res.json();
-			loaded = true;
+			let userInfo = await res.json();
+			return userInfo;
 		} else if (res.status === 401) {
-			await refreshToken();
+			refreshToken();
+			throw new Error('auth expired. try again');
 		} else {
 			throw new Error(res.status.toString());
 		}
 	};
 
-	onMount(() => {
-		if ($userInfoStore.authorized) {
-			getUserInfo();
-		}
-	});
-
 	$: if ($userInfoStore.authorized) {
-		getUserInfo();
+		mode = 'user';
+		getUserPromise = getUserInfo();
 	}
 
-	let idInput: string;
-	let passwordInput: string;
+	let signInId = '';
+	let signInPass = '';
+	let signInMessage = '';
 
 	const handleSignin = async () => {
+		if (signInId === '' || signInPass === '') {
+			return;
+		}
 		const res = await fetch(`${$API_URL}/signin`, {
 			method: 'POST',
 			credentials: 'include',
 			body: JSON.stringify({
-				Id: idInput,
-				Password: passwordInput
+				Id: signInId,
+				Password: signInPass
 			})
 		});
 		if (res.ok) {
 			const jsonBody = await res.json();
 			userInfoStore.set({ authorized: true, id: jsonBody.Id });
+			signInId = '';
+			signInPass = '';
 		} else {
-			alert(res.text());
+			signInMessage = res.statusText;
+			alert(res.statusText);
 		}
-		passwordInput = '';
 	};
 
-	let signUpId: string;
-	let signUpPass: string;
-	let passConfirm: string;
+	let signUpId = '';
+	let signUpPass = '';
+	let signUpPassConfirm = '';
+	let signUpMessage = '';
 
 	const handleSignUp = async () => {
+		if (signUpId === '' || signUpPass === '') {
+			return;
+		}
+		if (signUpPass !== signUpPassConfirm) {
+			signUpMessage = 'password wrong';
+		}
 		const res = await fetch(`${$API_URL}/signup`, {
 			method: 'POST',
 			credentials: 'omit',
@@ -75,9 +86,10 @@
 			alert('Sign Up Success');
 			signUpId = '';
 			signUpPass = '';
-			passConfirm = '';
+			signUpPassConfirm = '';
 		} else {
-			alert(`Sign Up Failed : ${await res.text()}`);
+			// alert(`Sign Up Failed : ${await res.text()}`);
+			signUpMessage = res.statusText;
 		}
 	};
 
@@ -87,94 +99,127 @@
 			credentials: 'include'
 		});
 		userInfoStore.set({ authorized: false, id: '' });
+		mode = 'signin';
 	};
 
-	let mode = true;
+	let mode = 'signin';
 </script>
 
-{#if $userInfoStore.authorized}
-	{#if loaded}
-		<p class="name">{$userInfoStore.id}</p>
-		<p>WINs : {userInfo.W}</p>
-		<p>LOSSes : {userInfo.L}</p>
-		<button on:click={handleSignOut} class="signout">Sign Out</button>
+<div class="container">
+	{#if mode === 'signin'}
+		<form class="signin" on:submit|preventDefault={handleSignin}>
+			<h2>SIGN IN</h2>
+			<input bind:value={signInId} placeholder="ID" />
+			<input type="password" bind:value={signInPass} placeholder="PASSWORD" />
+			{#if signInMessage !== ''}
+				<p class="error">{signInMessage}</p>
+			{/if}
+			<button class="submit-button" type="submit">SIGN IN</button>
+			<button class="toggle-button" on:click={() => (mode = 'signup')}>Go To Sign Up</button>
+		</form>
+	{:else if mode === 'signup'}
+		<form class="signup" on:submit|preventDefault={handleSignUp}>
+			<h2>SIGN UP</h2>
+			<input bind:value={signUpId} placeholder="ID" />
+			<input type="password" bind:value={signUpPass} placeholder="PASSWORD" />
+			<input type="password" bind:value={signUpPassConfirm} placeholder="PASSWORD CONFIRM" />
+			{#if signUpMessage !== ''}
+				<p class="error">{signUpMessage}</p>
+			{/if}
+			<button class="submit-button" type="submit">SIGN UP</button>
+			<button class="toggle-button" on:click={() => (mode = 'signin')}>Go To Sign In</button>
+		</form>
 	{:else}
-		<img src="./loading.webp" alt="loading" class="center" />
+		{#await getUserPromise}
+			<p>loading</p>
+		{:then u}
+			<h2>{u.UserId}</h2>
+			<button on:click={handleSignOut} class="signout">Sign Out</button>
+			<p>WINs : {u.W}</p>
+			<p>LOSSes : {u.L}</p>
+			{#if u.RecentGames.length === 0}
+				<p>no games found</p>
+			{:else}
+				<div class="game-history">
+					{#each u.RecentGames as g}
+						<div class={`game-history-item ${g.WinnerId === u.UserId ? 'win' : 'lose'}`}>
+							{g.BlueId} VS {g.OrangeId}
+						</div>
+					{/each}
+				</div>
+			{/if}
+		{:catch e}
+			<p>{e.message}</p>
+		{/await}
 	{/if}
-{:else if mode}
-	<form on:submit|preventDefault={handleSignin}>
-		<p>Sign In</p>
-		<input type="text" placeholder="Name" bind:value={idInput} />
-		<input type="password" placeholder="Password" bind:value={passwordInput} />
-		<button> Sign In </button>
-	</form>
-	<button type="button" class="change" on:click={() => (mode = !mode)}>Sign Up</button>
-{:else}
-	<form on:submit|preventDefault={handleSignUp}>
-		<p>Sign Up</p>
-		<input type="text" placeholder="Name" bind:value={signUpId} />
-		<input type="password" placeholder="Password" bind:value={signUpPass} />
-		<input type="password" placeholder="Password again" bind:value={passConfirm} />
-		<button> Sign Up </button>
-	</form>
-	<button type="button" class="change" on:click={() => (mode = !mode)}> Sign In </button>
-	<p class="small">The id should contain a combination of 6 to 30 letters and numbers.</p>
-	<p class="small">The password should contain a combination of 6 to 30 characters.</p>
-	<p class="small">No personal infos required.</p>
-{/if}
+</div>
 
 <style>
-	p {
-		margin: 0 auto;
-		width: 20rem;
-		text-align: center;
-		font-size: 2rem;
+	.container {
+		width: 30%;
+		padding: 20px;
+		background: white;
+		border-radius: 10px;
+		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 	}
-	.name {
-		font-size: 2rem;
-	}
-	.small {
-		font-size: 1rem;
-	}
-
-	form {
-		margin: auto;
-		display: flex;
-		flex-direction: column;
-		width: 20rem;
-		gap: 1rem;
-		border: 1px black solid;
-		border-radius: 1rem;
-		padding: 1rem;
-		background-color: gainsboro;
-	}
-
 	input {
-		font-size: 20px;
-		border: 0;
-		border-radius: 1rem;
-		padding: 0.5rem;
+		width: 100%;
+		margin: 10px 0;
+		padding: 10px;
+		border: 1px solid #ddd;
+		border-radius: 5px;
+		box-sizing: border-box;
 	}
-
-	button {
-		background-color: skyblue;
-		border: 0;
-		border-radius: 1rem;
-		height: 1.5rem;
+	.submit-button {
+		width: 100%;
+		margin: 10px 0;
+		padding: 10px;
+		border: 1px solid #ddd;
+		border-radius: 5px;
+		background-color: #28a745;
+		color: white;
+		cursor: pointer;
+		border: none;
+	}
+	.submit-button:hover {
+		background-color: #218838;
+	}
+	.toggle-button {
+		all: unset;
+		color: #007bff;
+		text-decoration: none;
+		text-align: center;
+	}
+	.toggle-button:hover {
+		text-decoration: underline;
+	}
+	.error {
+		color: red;
+		font-size: 0.9em;
 	}
 	.signout {
-		display: block;
-		margin: 0 auto;
+		padding: 5px 10px;
+		background-color: red;
+		color: white;
+		border: none;
+		cursor: pointer;
 	}
-	.change {
-		margin: auto;
-		display: block;
-		width: 20rem;
-		background-color: orange;
+	.game-history {
+		padding: 10px;
+		margin-bottom: 5px;
+		border-radius: 5px;
+		max-height: 400px;
+		overflow-y: auto;
 	}
-
-	.center {
-		display: block;
-		margin: 0 auto;
+	.game-history-item {
+		padding: 10px;
+		margin-bottom: 5px;
+		border-radius: 5px;
+	}
+	.win {
+		background-color: lightblue;
+	}
+	.loss {
+		background-color: lightcoral;
 	}
 </style>

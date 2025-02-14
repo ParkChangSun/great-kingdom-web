@@ -4,32 +4,33 @@
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/stores';
 
-	let lobbyName = '';
-	let lobbyId = '';
-
 	let chat: string[] = [];
 	let chatDiv: HTMLDivElement;
-
-	let players: { UserId: string }[] = [];
-	let currentConnections: { UserId: string }[] = [];
-	$: isHost = players.length > 0 && $userInfoStore.id === players[0].UserId;
-	$: isChallenger = players.length > 1 && $userInfoStore.id === players[1].UserId;
 
 	type Game = {
 		Board: number[][];
 		Turn: number;
 		PassFlag: boolean;
 		Playing: boolean;
-		PlayersId: string[];
 	};
-	let game: Game = {
-		Board: Array.from(Array(9), (v, i) => Array(0, 0, 0, 0, 0, 0, 0, 0, 0)),
-		Turn: 0,
-		PassFlag: false,
-		Playing: false,
-		PlayersId: ['p1', 'p2']
+	type GameLobby = {
+		GameSessionId: string;
+		GameSessionName: string;
+		Connections: {
+			PlayerId: string;
+		}[];
+		Players: string[];
+		CoinToss: string[];
+		Game: Game;
 	};
-	$: tableBorder = game.Playing ? (game.Turn % 2 === 1 ? 'turnBlue' : 'turnOrange') : 'notPlaying';
+	let gameLobby: Partial<GameLobby> = {};
+	$: isHost = gameLobby.Players?.[0] === $userInfoStore.id;
+	$: isChallenger = players.length > 1 && $userInfoStore.id === players[1].UserId;
+	$: tableBorder = gameLobby.Game?.Playing
+		? gameLobby.Game.Turn % 2 === 1
+			? 'turnBlue'
+			: 'turnOrange'
+		: 'notPlaying';
 
 	let socket: WebSocket;
 
