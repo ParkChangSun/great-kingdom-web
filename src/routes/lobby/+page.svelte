@@ -115,7 +115,7 @@
 				<p>No game found</p>
 			{/if}
 			{#each lobbies as l}
-				<button class="lobby" on:click={() => goto(`/game?GameSessionId=${l.GameLobbyId}`)}>
+				<button class="lobby" on:click={() => goto(`/game?gameId=${l.GameLobbyId}`)}>
 					<span>{l.GameLobbyName}</span>
 					<div class="lobby-players">
 						{#if l.Players.length == 0}
@@ -145,7 +145,8 @@
 				{/each}
 			</div>
 			<form class="chat-input-form" on:submit|preventDefault={sendChat}>
-				<input bind:value={chatInput} /><button type="submit">Send</button>
+				<input bind:value={chatInput} placeholder="Chat to #Maintainer" />
+				<button type="submit">Send</button>
 			</form>
 		</div>
 		<div class="chat-users"></div>
@@ -192,6 +193,7 @@
 		gap: 10px;
 		max-height: 400px;
 		overflow-y: auto;
+		border: 1px solid #ccc;
 	}
 	.lobby {
 		all: unset;

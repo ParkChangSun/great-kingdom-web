@@ -4,36 +4,48 @@
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/stores';
 
-	let chat: string[] = [];
+	let chat = ['connecting...'];
 	let chatDiv: HTMLDivElement;
 
-	type Game = {
-		Board: number[][];
-		Turn: number;
-		PassFlag: boolean;
-		Playing: boolean;
-	};
 	type GameLobby = {
-		GameSessionId: string;
-		GameSessionName: string;
+		GameLobbyId: string;
+		GameLobbyName: string;
 		Connections: {
-			PlayerId: string;
+			UserId: string;
 		}[];
 		Players: string[];
 		CoinToss: string[];
-		Game: Game;
+		Game: {
+			Board: number[][];
+			Turn: number;
+			PassFlag: boolean;
+			Playing: boolean;
+		};
 	};
-	let gameLobby: Partial<GameLobby> = {};
-	$: isHost = gameLobby.Players?.[0] === $userInfoStore.id;
-	$: isChallenger = players.length > 1 && $userInfoStore.id === players[1].UserId;
-	$: tableBorder = gameLobby.Game?.Playing
+	let gameLobby: GameLobby = {
+		GameLobbyId: '',
+		GameLobbyName: '',
+		Connections: [],
+		Players: [],
+		CoinToss: ['', ''],
+		Game: {
+			Board: new Array(9).fill(0).map(() => new Array(9).fill(0)),
+			Turn: 0,
+			PassFlag: false,
+			Playing: false
+		}
+	};
+
+	$: isHost = gameLobby.Players.length > 0 ? gameLobby.Players[0] === $userInfoStore.id : false;
+	$: isPlayer = gameLobby.Players.includes($userInfoStore.id);
+	$: turnColor = gameLobby.Game.Playing
 		? gameLobby.Game.Turn % 2 === 1
-			? 'turnBlue'
-			: 'turnOrange'
-		: 'notPlaying';
+			? 'turn-blue'
+			: 'turn-orange'
+		: 'turn-nobody';
+	$: color = gameLobby.Game.Turn % 2 === 1 ? 'blue' : 'orange';
 
 	let socket: WebSocket;
-
 	let pingpong: NodeJS.Timeout;
 
 	onMount(async () => {
@@ -44,7 +56,7 @@
 		);
 		socket.addEventListener('open', () => {
 			console.log('Opened');
-			chat = [...chat, 'connected.', 'waiting for game sync...'];
+			chat = [...chat, 'connected.'];
 		});
 		socket.addEventListener('close', (e) => {
 			console.log(e);
@@ -54,6 +66,7 @@
 		});
 		socket.addEventListener('message', async (e) => {
 			const data = JSON.parse(e.data);
+			console.log(data);
 			if (data.EventType === 'pong') {
 				console.log('pong');
 			} else if (data.EventType === 'CHAT') {
@@ -62,13 +75,17 @@
 				if (chatDiv.scrollTop + chatDiv.clientHeight + 24 >= chatDiv.scrollHeight) {
 					chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
 				}
-			} else if (data.EventType === 'GAME') {
-				game = data.Game;
-			} else if (data.EventType === 'USER') {
-				players = data.Players;
-				currentConnections = data.CurrentConnections;
-				lobbyName = data.GameSessionName;
-				lobbyId = data.GameSessionId;
+			}
+			// else if (data.EventType === 'GAME') {
+			// 	gameLobby.Game = data.Game;
+			// } else if (data.EventType === 'USER') {
+			// 	players = data.Players;
+			// 	currentConnections = data.CurrentConnections;
+			// 	lobbyName = data.GameSessionName;
+			// 	lobbyId = data.GameSessionId;
+			// }
+			else {
+				gameLobby = { ...gameLobby, ...data };
 			}
 		});
 
@@ -114,21 +131,21 @@
 	const movePlayerSlot = () => {
 		socket.send(JSON.stringify({ action: 'slot' }));
 	};
+	gameLobby.Game?.Board;
 </script>
 
-<h2 class="name">{lobbyName}</h2>
-<p>{lobbyId}</p>
-<div id="game">
-	<table class={tableBorder}>
-		{#each game.Board as r, i}
+<h2>{gameLobby.GameLobbyId}</h2>
+<div class="game">
+	<table class={turnColor}>
+		{#each gameLobby.Game.Board as r, i}
 			<tr>
 				{#each r as c, j}
 					<td
 						><button
 							class={`cell cellstatus${c}`}
-							disabled={!game.Playing ||
+							disabled={!gameLobby.Game.Playing ||
 								c !== 0 ||
-								game.PlayersId[(game.Turn - 1) % 2] !== $userInfoStore.id}
+								gameLobby.CoinToss[(gameLobby.Game.Turn - 1) % 2] !== $userInfoStore.id}
 							on:click={() => doSingleMove(i, j)}
 						></button></td
 					>
@@ -136,61 +153,59 @@
 			</tr>
 		{/each}
 	</table>
-	<button on:click={doPassMove} disabled={game.PlayersId[(game.Turn - 1) % 2] !== $userInfoStore.id}
-		>{game.Playing && game.PassFlag ? 'Opponent Passed' : 'Pass'}</button
+	<button
+		on:click={doPassMove}
+		disabled={!gameLobby.Game.Playing ||
+			gameLobby.CoinToss[(gameLobby.Game.Turn - 1) % 2] !== $userInfoStore.id}
 	>
+		{gameLobby.Game.Playing && gameLobby.Game.PassFlag ? 'Opponent Passed' : 'Pass'}
+	</button>
 
-	<div class="lobbyinfo">
-		<div class="gameInfo">
-			<p>Turn {game.Turn}</p>
-			{#if game.Turn === 0}
-				<p>Game not started.</p>
+	<div class="info">
+		<div class="game-info">
+			{#if !gameLobby.Game.Playing}
+				<p>Get Ready!</p>
 			{:else}
-				<p>{game.PlayersId[(game.Turn - 1) % 2]}</p>
+				<p>Turn {gameLobby.Game.Turn}</p>
+				<p class={color}>{gameLobby.CoinToss[(gameLobby.Game.Turn - 1) % 2]}</p>
 			{/if}
 		</div>
-		<div bind:this={chatDiv} class="chat">
+		<div bind:this={chatDiv} class="chat-box">
 			{#each chat as c}
-				<p class="chatmsg">{c}</p>
+				<span>{c}</span>
 			{/each}
 		</div>
 		<form on:submit|preventDefault={sendMessage}>
 			<input type="text" bind:value={chatInput} />
 			<button>CHAT</button>
 		</form>
-		<button on:click={startGame} disabled={!isHost || players.length !== 2}>start</button>
-		<button on:click={movePlayerSlot}
-			>Move to {isHost || isChallenger ? 'spectators' : 'players'}</button
-		>
+		<button on:click={startGame} disabled={!isHost || gameLobby.Players.length !== 2}>START</button>
+		<button on:click={movePlayerSlot}>Move to {isPlayer ? 'spectators' : 'players'} </button>
 	</div>
 
-	<div class="users">
-		<div class="part">
+	<div class="user">
+		<div class="user-box">
 			<b>Players</b>
-			{#if players.length > 0}
-				<p
-					class={game.Playing ? (players[0].UserId === game.PlayersId[0] ? 'blue' : 'orange') : ''}
-				>
-					👑 {players[0].UserId}
-				</p>
+			{#if gameLobby.Players.length > 0}
+				<span>
+					👑 {gameLobby.Players[0]}
+				</span>
 			{:else}
-				<p>empty</p>
+				<span>empty</span>
 			{/if}
-			{#if players.length > 1}
-				<p
-					class={game.Playing ? (players[1].UserId === game.PlayersId[1] ? 'orange' : 'blue') : ''}
-				>
-					🕹️ {players[1].UserId}
-				</p>
+			{#if gameLobby.Players.length > 1}
+				<span>
+					🕹️ {gameLobby.Players[1]}
+				</span>
 			{:else}
-				<p>empty</p>
+				<span>empty</span>
 			{/if}
 		</div>
-		<div class="part">
+		<div class="user-box spec">
 			<b>Spectators</b>
 			<div>
-				{#each currentConnections as c}
-					{#if !players.some((e) => e.UserId === c.UserId)}
+				{#each gameLobby.Connections as c}
+					{#if !gameLobby.Players.some((e) => e === c.UserId)}
 						<p>{c.UserId}</p>
 					{/if}
 				{/each}
@@ -204,45 +219,50 @@
 		margin-bottom: 0;
 	}
 
-	.lobbyinfo {
+	.info {
 		display: flex;
 		flex-direction: column;
 		width: 20rem;
+		gap: 5px;
 	}
 
-	.gameInfo {
+	.game-info {
 		padding: 1rem;
 		border: 3px solid black;
 	}
-	.gameInfo > p {
+	.game-info > p {
 		margin: 0;
 		text-align: center;
 	}
 
-	#game {
+	.game {
 		display: flex;
 		gap: 10px;
 	}
 
-	.chat {
+	.chat-box {
 		overflow-y: scroll;
 		border: 3px solid black;
 		padding: 5px;
 		height: 25rem;
-	}
-	.chat > p {
-		overflow-wrap: break-word;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.user {
+		display: flex;
+		flex-direction: column;
 		width: 10rem;
-		padding: 1rem;
+		gap: 5px;
 	}
-	.part {
+	.user-box {
 		border: 3px solid black;
+		padding: 5px;
+		display: flex;
+		flex-direction: column;
 	}
-	.part > b {
-		margin: 0;
+	.spec {
+		flex: 1;
 	}
 
 	.chatmsg {
@@ -261,13 +281,13 @@
 	table {
 		border-spacing: 5px;
 	}
-	.notPlaying {
+	.turn-nobody {
 		border: 5px solid gray;
 	}
-	.turnBlue {
+	.turn-blue {
 		border: 5px solid blue;
 	}
-	.turnOrange {
+	.turn-orange {
 		border: 5px solid orange;
 	}
 
