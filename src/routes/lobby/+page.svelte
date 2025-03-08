@@ -1,122 +1,107 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
+	import { building } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { API_URL, locale, refreshToken, userInfoStore } from '$lib';
+	import { authorizedApi, connectWebSocket, userInfoStore, WS_URL } from '$lib';
 	import { onDestroy, onMount } from 'svelte';
+	import type { Writable } from 'svelte/store';
 
-	type GameLobby = {
-		GameLobbyId: string;
-		GameLobbyName: string;
+	type GameTable = {
+		GameTableId: string;
+		GameTableName: string;
 		Players: string[];
 	};
-	const getGameLobbies = async () => {
-		const res = await fetch(`${$API_URL}/games`, {
-			method: 'GET',
-			credentials: 'include'
-		});
-		if (res.ok) {
-			let gameLobbies: GameLobby[] = await res.json();
-			return gameLobbies;
-		} else if (res.status === 401) {
-			refreshToken();
-			throw new Error('auth expired. try again');
-		} else {
-			throw new Error(res.statusText);
+
+	const getGameTables = async () => {
+		try {
+			let res = await authorizedApi.get<GameTable[]>('/tables');
+			return res.data;
+		} catch (error) {
+			console.log(error);
+			throw new Error('error getlobbies');
 		}
 	};
-	let lobbiesPromise: Promise<GameLobby[]> = getGameLobbies();
+	let getTablesPromise = getGameTables();
 
-	let chat: string[] = [];
+	let chat = ['connecting...'];
 	let chatDiv: HTMLDivElement;
 	$: if (chat && chatDiv) {
 		chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
 	}
-	let socket: WebSocket;
-	const connectSocket = () => {
-		socket = new WebSocket(`wss://websocket.greatkingdom.net?GameSessionId=globalchat`);
-		socket.addEventListener('open', () => {
-			console.log('Opened');
-			chat = [...chat, 'connected.'];
-		});
-		socket.addEventListener('close', (e) => {
-			console.log(e);
-		});
-		socket.addEventListener('error', (e) => {
-			console.log(e);
-			chat = [...chat, 'error try again'];
-			// refreshToken();
-			// addChat('refreshing...');
-		});
-		socket.addEventListener('message', async (e) => {
-			const { Chat }: { Chat: string } = JSON.parse(e.data);
+
+	const handler = (data: any) => {
+		if (data.EventType === 'CHAT') {
+			const { Chat }: { Chat: string } = data;
 			chat = [...chat, Chat];
-		});
+		} else {
+			console.log(data);
+		}
 	};
 
-	$: if (browser) {
-		connectSocket();
-	}
+	let socket: WebSocket;
+	let authorized: Writable<boolean>;
+	let cleanUp = () => {};
+	const unsub = userInfoStore.subscribe((v) => {
+		cleanUp();
+		if (!v.Authorized) return;
+
+		[socket, authorized, cleanUp] = connectWebSocket(`${WS_URL}?GameTableId=globalchat`, handler);
+	});
+
+	onDestroy(() => {
+		cleanUp();
+		unsub();
+	});
 
 	let chatInput: string = '';
-	const sendChat = async () => {
+	const sendChat = () => {
+		if (chatInput === '') return;
 		socket.send(JSON.stringify({ action: 'globalchat', Chat: chatInput }));
 		chatInput = '';
 	};
 
-	let popupContainer: HTMLElement;
-	const closePopup = () => {
-		popupContainer.classList.add('inactive');
+	let tableNameInput: string = '';
+	let createTablePromise: Promise<void>;
+	const postCreateTable = async () => {
+		try {
+			const res = await authorizedApi.post<{ GameTableId: string }>('/table', {
+				GameTableName: tableNameInput
+			});
+			goto(`/table?tableId=${res.data.GameTableId}`);
+		} catch (error) {
+			throw new Error('error postcreatetable');
+		}
 	};
-	const openPopup = () => {
-		popupContainer.classList.remove('inactive');
+	const createTable = () => {
+		if (tableNameInput === '') return;
+		createTablePromise = postCreateTable();
 	};
-	let lobbyNameInput: string = '';
 
-	let createPromise: Promise<void>;
-	const createLobby = () => {
-		if (lobbyNameInput === '') {
-			return;
-		}
-		createPromise = postCreateLobby();
+	const enterTable = (tableId: string) => {
+		if (!$userInfoStore.Authorized) return;
+		goto(`/table?tableId=${tableId}`);
 	};
-	const postCreateLobby = async () => {
-		const res = await fetch(`${$API_URL}/game`, {
-			method: 'POST',
-			credentials: 'include',
-			body: JSON.stringify({
-				GameSessionName: lobbyNameInput
-			})
-		});
-		if (res.ok) {
-			const { GameSessionId }: { GameSessionId: string } = await res.json();
-			goto(`/game?gameId=${GameSessionId}`);
-		} else if (res.status === 401) {
-			refreshToken();
-			throw new Error('auth expired. try again');
-		} else {
-			throw new Error(res.statusText);
-		}
-	};
+
+	let isPopupOpened = false;
 </script>
 
 <div class="container">
 	<div class="lobby-header">
 		<h2>Play Great Kingdom</h2>
 		<div class="lobby-header-buttons">
-			<button on:click={openPopup}>Create Lobby</button>
-			<button on:click={() => (lobbiesPromise = getGameLobbies())}>Reload List</button>
+			<button on:click={() => (isPopupOpened = !isPopupOpened)}>Create Lobby</button>
+			<button on:click={() => (getTablesPromise = getGameTables())}>Reload List</button>
 		</div>
 	</div>
 	<div class="lobby-grid">
-		{#await lobbiesPromise}
+		{#await getTablesPromise}
 			<p>loading</p>
 		{:then lobbies}
 			{#if lobbies.length === 0}
 				<p>No game found</p>
 			{/if}
 			{#each lobbies as l}
-				<button class="lobby" on:click={() => goto(`/game?gameId=${l.GameLobbyId}`)}>
-					<span>{l.GameLobbyName}</span>
+				<button class="lobby" on:click={() => enterTable(l.GameTableId)}>
+					<span>{l.GameTableName}</span>
 					<div class="lobby-players">
 						{#if l.Players.length == 0}
 							<span>empty</span>
@@ -145,26 +130,28 @@
 				{/each}
 			</div>
 			<form class="chat-input-form" on:submit|preventDefault={sendChat}>
-				<input bind:value={chatInput} placeholder="Chat to #Maintainer" />
+				<input bind:value={chatInput} disabled={!$authorized} placeholder="Enter chat message" />
 				<button type="submit">Send</button>
 			</form>
 		</div>
-		<div class="chat-users"></div>
 	</div>
-	<div class="popup-container inactive" bind:this={popupContainer}>
-		<h2>Create Lobby</h2>
-		{#await createPromise}
-			<p>loading</p>
-		{:then}
-			<form class="popup" on:submit|preventDefault={createLobby}>
-				<label>Name <input bind:value={lobbyNameInput} /></label><br />
-				<button type="submit">Create</button>
-			</form>
-		{:catch e}
-			<p>{e.message}</p>
-		{/await}
-		<button on:click={closePopup}>Close</button>
-	</div>
+
+	{#if isPopupOpened}
+		<div class="popup-container">
+			<h2>Create Lobby</h2>
+			{#await createTablePromise}
+				<p>loading</p>
+			{:then}
+				<form class="popup" on:submit|preventDefault={createTable}>
+					<label>Name <input bind:value={tableNameInput} /></label><br />
+					<button type="submit">Create</button>
+				</form>
+			{:catch e}
+				<p>{e.message}</p>
+			{/await}
+			<button on:click={() => (isPopupOpened = !isPopupOpened)}>Close</button>
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -211,9 +198,17 @@
 	.lobby:nth-child(4n + 4) {
 		background: #87cefa;
 	}
+	.lobby:nth-child(4n + 1):hover,
+	.lobby:nth-child(4n + 4):hover {
+		background: #00bfff;
+	}
 	.lobby:nth-child(4n + 2),
 	.lobby:nth-child(4n + 3) {
 		background: #ffa500;
+	}
+	.lobby:nth-child(4n + 2):hover,
+	.lobby:nth-child(4n + 3):hover {
+		background: #ff8c00;
 	}
 	.lobby-players {
 		display: flex;
@@ -240,12 +235,6 @@
 		background: white;
 		flex: 3;
 	}
-	.chat-users {
-		border: 1px solid #ccc;
-		padding: 10px;
-		background: white;
-		width: 150px;
-	}
 	.chat-input-form {
 		display: flex;
 		margin-top: 10px;
@@ -264,8 +253,5 @@
 		box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 		border-radius: 10px;
 		z-index: 1000;
-	}
-	.inactive {
-		display: none;
 	}
 </style>

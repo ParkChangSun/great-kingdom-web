@@ -1,6 +1,8 @@
 <script lang="ts">
-	import { userInfoStore, API_URL, refreshToken } from '$lib';
-	import { onMount } from 'svelte';
+	import { userInfoStore, authorizedApi, unauthorizedApi, type Authorization } from '$lib';
+	import { isAxiosError } from 'axios';
+
+	let mode = 'signin';
 
 	type UserInfo = {
 		UserId: string;
@@ -12,28 +14,16 @@
 			WinnerId: string;
 		}[];
 	};
-	let getUserPromise: Promise<UserInfo>;
 
 	const getUserInfo = async () => {
-		const res = await fetch(`${$API_URL}/user?UserId=${$userInfoStore.id}`, {
-			method: 'GET',
-			credentials: 'include'
-		});
-		if (res.ok) {
-			let userInfo = await res.json();
-			return userInfo;
-		} else if (res.status === 401) {
-			refreshToken();
-			throw new Error('auth expired. try again');
-		} else {
-			throw new Error(res.status.toString());
+		try {
+			const p = await authorizedApi.get<UserInfo>(`/user?UserId=${$userInfoStore.Id}`);
+			return p.data;
+		} catch (error) {
+			throw new Error('error getuserinfo');
 		}
 	};
-
-	$: if ($userInfoStore.authorized) {
-		mode = 'user';
-		getUserPromise = getUserInfo();
-	}
+	let getUserPromise: Promise<UserInfo>;
 
 	let signInId = '';
 	let signInPass = '';
@@ -41,24 +31,20 @@
 
 	const handleSignin = async () => {
 		if (signInId === '' || signInPass === '') {
+			signInMessage = 'invalid input';
 			return;
 		}
-		const res = await fetch(`${$API_URL}/signin`, {
-			method: 'POST',
-			credentials: 'include',
-			body: JSON.stringify({
+
+		try {
+			const res = await unauthorizedApi.post<Authorization>('/sign-in', {
 				Id: signInId,
 				Password: signInPass
-			})
-		});
-		if (res.ok) {
-			const jsonBody = await res.json();
-			userInfoStore.set({ authorized: true, id: jsonBody.Id });
-			signInId = '';
-			signInPass = '';
-		} else {
-			signInMessage = res.statusText;
-			alert(res.statusText);
+			});
+			userInfoStore.set(res.data);
+		} catch (error) {
+			if (isAxiosError(error)) {
+				signInMessage = error.response?.data.message;
+			} else if (error instanceof Error) signInMessage = error.message;
 		}
 	};
 
@@ -68,41 +54,49 @@
 	let signUpMessage = '';
 
 	const handleSignUp = async () => {
-		if (signUpId === '' || signUpPass === '') {
+		if (signUpId === '' || signUpPass === '' || signUpPass !== signUpPassConfirm) {
+			signUpMessage = 'invalid input';
 			return;
 		}
-		if (signUpPass !== signUpPassConfirm) {
-			signUpMessage = 'password wrong';
-		}
-		const res = await fetch(`${$API_URL}/signup`, {
-			method: 'POST',
-			credentials: 'omit',
-			body: JSON.stringify({
+
+		try {
+			const res = await unauthorizedApi.post('/sign-up', {
 				Id: signUpId,
 				Password: signUpPass
-			})
-		});
-		if (res.ok) {
+			});
 			alert('Sign Up Success');
-			signUpId = '';
-			signUpPass = '';
-			signUpPassConfirm = '';
-		} else {
-			// alert(`Sign Up Failed : ${await res.text()}`);
-			signUpMessage = res.statusText;
+			mode = 'signin';
+		} catch (error) {
+			if (isAxiosError(error)) {
+				signUpMessage = error.response?.data.message;
+			} else if (error instanceof Error) console.log(error);
 		}
+
+		signUpId = '';
+		signUpPass = '';
+		signUpPassConfirm = '';
 	};
 
 	const handleSignOut = async () => {
-		await fetch(`${$API_URL}/signout`, {
-			method: 'POST',
-			credentials: 'include'
-		});
-		userInfoStore.set({ authorized: false, id: '' });
-		mode = 'signin';
+		try {
+			const res = await authorizedApi.post<Authorization>('/sign-out');
+			userInfoStore.set(res.data);
+		} catch (error) {
+			userInfoStore.set({ Authorized: false, Id: '', AccessToken: '' });
+			if (error instanceof Error) console.log(error);
+		}
 	};
 
-	let mode = 'signin';
+	let sent = false;
+	$: if ($userInfoStore.Authorized) {
+		mode = 'user';
+		if (!sent) {
+			getUserPromise = getUserInfo();
+			sent = true;
+		}
+	} else {
+		mode = 'signin';
+	}
 </script>
 
 <div class="container">

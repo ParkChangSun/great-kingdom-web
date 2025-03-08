@@ -1,19 +1,16 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { locale, refreshToken, userInfoStore } from '$lib';
+	import { locale, userInfoStore } from '$lib';
 	import { onMount } from 'svelte';
 
 	const navbar = [
 		{ route: 'HOME', url: '/' },
-		// { route: 'CHAT', url: '/chat' },
 		{ route: 'PLAY', url: '/lobby' }
 	];
-	$: user = $userInfoStore.authorized ? $userInfoStore.id : 'LOG IN';
+	$: user = $userInfoStore.Authorized ? $userInfoStore.Id : 'LOG IN';
 
 	onMount(() => {
 		$locale = $page.url.searchParams.get('lang') ?? 'en';
-		refreshToken();
 	});
 </script>
 

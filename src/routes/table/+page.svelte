@@ -1,15 +1,14 @@
 <script lang="ts">
 	import { onDestroy, onMount, tick } from 'svelte';
-	import { userInfoStore } from '$lib';
+	import { authorizedApi, connectWebSocket, userInfoStore, WS_URL, type Authorization } from '$lib';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import type { Writable } from 'svelte/store';
+	import { browser, building } from '$app/environment';
 
-	let chat = ['connecting...'];
-	let chatDiv: HTMLDivElement;
-
-	type GameLobby = {
-		GameLobbyId: string;
-		GameLobbyName: string;
+	type GameTable = {
+		GameTableId: string;
+		GameTableName: string;
 		Connections: {
 			UserId: string;
 		}[];
@@ -22,9 +21,9 @@
 			Playing: boolean;
 		};
 	};
-	let gameLobby: GameLobby = {
-		GameLobbyId: '',
-		GameLobbyName: '',
+	let defaultTable: GameTable = {
+		GameTableId: '',
+		GameTableName: '',
 		Connections: [],
 		Players: [],
 		CoinToss: ['', ''],
@@ -36,71 +35,49 @@
 		}
 	};
 
-	$: isHost = gameLobby.Players.length > 0 ? gameLobby.Players[0] === $userInfoStore.id : false;
-	$: isPlayer = gameLobby.Players.includes($userInfoStore.id);
-	$: turnColor = gameLobby.Game.Playing
-		? gameLobby.Game.Turn % 2 === 1
+	$: isHost =
+		defaultTable.Players.length > 0 ? defaultTable.Players[0] === $userInfoStore.Id : false;
+	$: isPlayer = defaultTable.Players.includes($userInfoStore.Id);
+	$: turnColor = defaultTable.Game.Playing
+		? defaultTable.Game.Turn % 2 === 1
 			? 'turn-blue'
 			: 'turn-orange'
 		: 'turn-nobody';
-	$: color = gameLobby.Game.Turn % 2 === 1 ? 'blue' : 'orange';
+	$: color = defaultTable.Game.Turn % 2 === 1 ? 'blue' : 'orange';
+
+	let chat: string[] = [];
+	let chatDiv: HTMLDivElement;
+	let chatInput: string;
+
+	const handler = (data: any) => {
+		if (data.EventType === 'CHAT') {
+			chat = [...chat, data.Chat];
+		} else if (data.EventType === 'TABLE') {
+			defaultTable = { ...defaultTable, ...data };
+		} else {
+			console.log(data);
+		}
+	};
 
 	let socket: WebSocket;
-	let pingpong: NodeJS.Timeout;
+	let authorized: Writable<boolean>;
+	let cleanUp = () => {};
 
-	onMount(async () => {
-		chat = ['connecting...'];
+	const unsub = userInfoStore.subscribe(async (v) => {
+		cleanUp();
+		if (!v.Authorized) {
+			browser && goto('/lobby');
+		}
 
-		socket = new WebSocket(
-			`wss://websocket.greatkingdom.net?GameSessionId=${$page.url.searchParams.get('gameId')}`
+		[socket, authorized, cleanUp] = connectWebSocket(
+			`${WS_URL}?GameTableId=${!building ? $page.url.searchParams.get('tableId') : ''}`,
+			handler
 		);
-		socket.addEventListener('open', () => {
-			console.log('Opened');
-			chat = [...chat, 'connected.'];
-		});
-		socket.addEventListener('close', (e) => {
-			console.log(e);
-		});
-		socket.addEventListener('error', (e) => {
-			console.log(e);
-		});
-		socket.addEventListener('message', async (e) => {
-			const data = JSON.parse(e.data);
-			console.log(data);
-			if (data.EventType === 'pong') {
-				console.log('pong');
-			} else if (data.EventType === 'CHAT') {
-				chat = [...chat, data.Chat];
-				await tick();
-				if (chatDiv.scrollTop + chatDiv.clientHeight + 24 >= chatDiv.scrollHeight) {
-					chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
-				}
-			}
-			// else if (data.EventType === 'GAME') {
-			// 	gameLobby.Game = data.Game;
-			// } else if (data.EventType === 'USER') {
-			// 	players = data.Players;
-			// 	currentConnections = data.CurrentConnections;
-			// 	lobbyName = data.GameSessionName;
-			// 	lobbyId = data.GameSessionId;
-			// }
-			else {
-				gameLobby = { ...gameLobby, ...data };
-			}
-		});
-
-		pingpong = setInterval(() => {
-			if (socket) {
-				socket.send(JSON.stringify({ action: 'ping' }));
-			}
-		}, 300000);
 	});
 
 	onDestroy(() => {
-		clearInterval(pingpong);
-		if (socket) {
-			socket.close();
-		}
+		cleanUp();
+		unsub();
 	});
 
 	beforeNavigate((e) => {
@@ -109,43 +86,35 @@
 		}
 	});
 
-	let chatInput: string;
-
 	const sendMessage = () => {
 		socket.send(JSON.stringify({ action: 'chat', Chat: chatInput }));
 		chatInput = '';
 	};
-
 	const startGame = () => {
 		socket.send(JSON.stringify({ action: 'move', Start: true }));
 	};
-
 	const doSingleMove = (r: Number, c: Number) => {
 		socket.send(JSON.stringify({ action: 'move', Point: { R: r, C: c } }));
 	};
-
 	const doPassMove = () => {
 		socket.send(JSON.stringify({ action: 'move', Pass: true }));
 	};
-
 	const movePlayerSlot = () => {
 		socket.send(JSON.stringify({ action: 'slot' }));
 	};
-	gameLobby.Game?.Board;
 </script>
 
-<h2>{gameLobby.GameLobbyId}</h2>
 <div class="game">
 	<table class={turnColor}>
-		{#each gameLobby.Game.Board as r, i}
+		{#each defaultTable.Game.Board as r, i}
 			<tr>
 				{#each r as c, j}
 					<td
 						><button
 							class={`cell cellstatus${c}`}
-							disabled={!gameLobby.Game.Playing ||
+							disabled={!defaultTable.Game.Playing ||
 								c !== 0 ||
-								gameLobby.CoinToss[(gameLobby.Game.Turn - 1) % 2] !== $userInfoStore.id}
+								defaultTable.CoinToss[(defaultTable.Game.Turn - 1) % 2] !== $userInfoStore.Id}
 							on:click={() => doSingleMove(i, j)}
 						></button></td
 					>
@@ -155,19 +124,20 @@
 	</table>
 	<button
 		on:click={doPassMove}
-		disabled={!gameLobby.Game.Playing ||
-			gameLobby.CoinToss[(gameLobby.Game.Turn - 1) % 2] !== $userInfoStore.id}
+		disabled={!defaultTable.Game.Playing ||
+			defaultTable.CoinToss[(defaultTable.Game.Turn - 1) % 2] !== $userInfoStore.Id}
 	>
-		{gameLobby.Game.Playing && gameLobby.Game.PassFlag ? 'Opponent Passed' : 'Pass'}
+		{defaultTable.Game.Playing && defaultTable.Game.PassFlag ? 'Opponent Passed' : 'Pass'}
 	</button>
 
 	<div class="info">
 		<div class="game-info">
-			{#if !gameLobby.Game.Playing}
+			<p><b>Table </b>{defaultTable.GameTableName}</p>
+			{#if !defaultTable.Game.Playing}
 				<p>Get Ready!</p>
 			{:else}
-				<p>Turn {gameLobby.Game.Turn}</p>
-				<p class={color}>{gameLobby.CoinToss[(gameLobby.Game.Turn - 1) % 2]}</p>
+				<p>Turn {defaultTable.Game.Turn}</p>
+				<p class={color}>{defaultTable.CoinToss[(defaultTable.Game.Turn - 1) % 2]}</p>
 			{/if}
 		</div>
 		<div bind:this={chatDiv} class="chat-box">
@@ -176,26 +146,28 @@
 			{/each}
 		</div>
 		<form on:submit|preventDefault={sendMessage}>
-			<input type="text" bind:value={chatInput} />
+			<input type="text" bind:value={chatInput} disabled={!$authorized} />
 			<button>CHAT</button>
 		</form>
-		<button on:click={startGame} disabled={!isHost || gameLobby.Players.length !== 2}>START</button>
+		<button on:click={startGame} disabled={!isHost || defaultTable.Players.length !== 2}
+			>START</button
+		>
 		<button on:click={movePlayerSlot}>Move to {isPlayer ? 'spectators' : 'players'} </button>
 	</div>
 
 	<div class="user">
 		<div class="user-box">
 			<b>Players</b>
-			{#if gameLobby.Players.length > 0}
+			{#if defaultTable.Players.length > 0}
 				<span>
-					👑 {gameLobby.Players[0]}
+					👑 {defaultTable.Players[0]}
 				</span>
 			{:else}
 				<span>empty</span>
 			{/if}
-			{#if gameLobby.Players.length > 1}
+			{#if defaultTable.Players.length > 1}
 				<span>
-					🕹️ {gameLobby.Players[1]}
+					🕹️ {defaultTable.Players[1]}
 				</span>
 			{:else}
 				<span>empty</span>
@@ -204,14 +176,18 @@
 		<div class="user-box spec">
 			<b>Spectators</b>
 			<div>
-				{#each gameLobby.Connections as c}
-					{#if !gameLobby.Players.some((e) => e === c.UserId)}
-						<p>{c.UserId}</p>
+				{#each defaultTable.Connections as c}
+					{#if !defaultTable.Players.some((e) => e === c.UserId)}
+						<span>{c.UserId}</span>
 					{/if}
 				{/each}
 			</div>
 		</div>
 	</div>
+
+	{#if !$authorized}
+		<div class="popup-container">connecting...</div>
+	{/if}
 </div>
 
 <style>
@@ -312,5 +288,17 @@
 	}
 	.cellstatus6 {
 		background-color: red;
+	}
+
+	.popup-container {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		background: white;
+		padding: 20px;
+		box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+		border-radius: 10px;
+		z-index: 1000;
 	}
 </style>

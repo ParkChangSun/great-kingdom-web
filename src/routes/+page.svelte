@@ -41,7 +41,10 @@
 	<h2>About this project</h2>
 	<p>{$i18n('home.about.1')}</p>
 	<p>{$i18n('home.about.2')}</p>
+	<p>This project is a side project of a junior dev.</p>
 </div>
+
+<p>0</p>
 
 <style>
 	.container {
