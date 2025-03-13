@@ -87,13 +87,9 @@
 		}
 	};
 
-	let sent = false;
 	$: if ($userInfoStore.Authorized) {
 		mode = 'user';
-		if (!sent) {
-			getUserPromise = getUserInfo();
-			sent = true;
-		}
+		getUserPromise = getUserInfo();
 	} else {
 		mode = 'signin';
 	}

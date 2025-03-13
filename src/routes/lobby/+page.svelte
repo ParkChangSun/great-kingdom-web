@@ -123,17 +123,20 @@
 		{/await}
 	</div>
 	<div class="chat-container">
-		<div class="chat">
-			<div class="chat-box" bind:this={chatDiv}>
-				{#each chat as c}
-					<div class="chat-message">{c}</div>
-				{/each}
-			</div>
-			<form class="chat-input-form" on:submit|preventDefault={sendChat}>
-				<input bind:value={chatInput} disabled={!$authorized} placeholder="Enter chat message" />
-				<button type="submit">Send</button>
-			</form>
+		<h2>Chat</h2>
+		<div class="chat-box" bind:this={chatDiv}>
+			{#each chat as c}
+				<div class="chat-message">{c}</div>
+			{/each}
 		</div>
+		<form class="chat-input-form" on:submit|preventDefault={sendChat}>
+			<input
+				bind:value={chatInput}
+				disabled={!$authorized}
+				placeholder="You can play with maintainer, he will be alarmed by chat messages"
+			/>
+			<button type="submit">Send</button>
+		</form>
 	</div>
 
 	{#if isPopupOpened}
@@ -217,16 +220,9 @@
 	}
 	.chat-container {
 		display: flex;
-		gap: 20px;
+		flex-direction: column;
 		margin-top: 20px;
 		height: 250px;
-	}
-	.chat {
-		display: flex;
-		flex-direction: column;
-		overflow-y: auto;
-		background: white;
-		flex: 3;
 	}
 	.chat-box {
 		border: 1px solid #ccc;

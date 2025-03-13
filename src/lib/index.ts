@@ -145,28 +145,28 @@ export const unauthorizedApi = axios.create({
 	withCredentials: true
 });
 
-export const locale = writable("en");
-export const i18n = derived(locale, ($locale) => (exprKey: string, vars: string[] = []) => {
-	if (!exprKey) return 'i18n error no exprkey'
-	if (!$locale) return 'i18n error no locale'
+// export const locale = writable("en");
+// export const i18n = derived(locale, ($locale) => (exprKey: string, vars: string[] = []) => {
+// 	if (!exprKey) return 'i18n error no exprkey'
+// 	if (!$locale) return 'i18n error no locale'
 
-	let text = translations.get($locale)?.get(exprKey) ?? ""
-	if (!text) return 'i18n error no text'
+// 	let text = translations.get($locale)?.get(exprKey) ?? ""
+// 	if (!text) return 'i18n error no text'
 
-	vars.map((k, n) => {
-		const regex = new RegExp(`{{${n}}}`, "g");
-		text = text.replace(regex, k);
-	});
-	return text
-})
+// 	vars.map((k, n) => {
+// 		const regex = new RegExp(`{{${n}}}`, "g");
+// 		text = text.replace(regex, k);
+// 	});
+// 	return text
+// })
 
-export const i18 = (locale: string) => (exprKey: string, vars: string[] = []) => {
-	let text = translations.get(locale)?.get(exprKey) ?? ""
-	if (!text) return 'i18n error no text'
+// export const i18 = (locale: string) => (exprKey: string, vars: string[] = []) => {
+// 	let text = translations.get(locale)?.get(exprKey) ?? ""
+// 	if (!text) return 'i18n error no text'
 
-	vars.map((k, n) => {
-		const regex = new RegExp(`{{${n}}}`, "g");
-		text = text.replace(regex, k);
-	});
-	return text
-}
+// 	vars.map((k, n) => {
+// 		const regex = new RegExp(`{{${n}}}`, "g");
+// 		text = text.replace(regex, k);
+// 	});
+// 	return text
+// }

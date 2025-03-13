@@ -1,54 +1,59 @@
-<script>
-	import { page } from '$app/stores';
-	import { i18n, locale } from '$lib';
-	import { onMount } from 'svelte';
+<main class="container">
+	<article>
+		<h2>그레이트 킹덤 - Great Kingdom</h2>
+		<p>
+			이세돌 9단이 직접 개발한 '그레이트 킹덤'을 온라인에서 만나보세요. 바둑의 깊이 있는 전략을
+			간단하고 재미있게 즐길 수 있는 이 게임은 친구, 가족과 함께하는 최고의 선택입니다. 지금 바로
+			플레이하여 새로운 전략의 세계를 경험해보세요!
+		</p>
 
-	onMount(() => {
-		$locale = $page.url.searchParams.get('lang') ?? 'en';
-	});
-</script>
+		<a href="/lobby">플레이</a>
 
-<svelte:head>
-	<title>{$i18n('title')}</title>
-	<meta name="description" content={$i18n('description')} />
-	<meta name="keywords" content="great kingdom" />
-	<meta charset="UTF-8" />
-	<meta name="rating" content="Safe For Kids" />
+		<h2>플레이 방법</h2>
+		<ol>
+			<li>중립성 배치: 게임판 중앙에 중립성을 놓습니다.</li>
+			<li>
+				성 배치: 선공은 파란색 성을, 후공은 주황색 성을 사용하여 번갈아 가며 성을 하나씩 배치하거나,
+				패스를 선언합니다.
+			</li>
+			<li>
+				영토: 빈 공간을 둘러싸면 해당 영역은 자신의 영토가 됩니다. 그러나 그 안에 상대방의 성이
+				있으면 영토로 인정되지 않습니다.
+			</li>
+			<li>
+				게임 종료 - 영토 경쟁: 두 플레이어가 연속으로 패스하면 게임이 종료되며, 각자의 영토 크기를
+				비교하여 승패를 결정합니다. 선공은 후공보다 최소 2개의 영토를 더 확보해야 승리합니다.
+			</li>
+			<li>
+				게임 종료 - 공성: 상대방의 성을 상하좌우로 완전히 둘러싸면 즉시 승리합니다. 바둑의 단수와
+				같은 개념입니다.
+			</li>
+		</ol>
 
-	<link rel="canonical" href="https://greatkingdom.net/" />
-	<link rel="alternate" hreflang="en" href="https://greatkingdom.net/" />
-	<link rel="alternate" hreflang="kr" href="https://greatkingdom.net/?lang=kr" />
-</svelte:head>
+		<h2>특징</h2>
+		<ul>
+			<li>짧은 플레이 시간: 바둑에 비해 한 판의 시간이 짧아 부담 없이 즐길 수 있습니다.</li>
+			<li>다양한 경기 양상: 중립성과 게임판 가장자리 활용으로 다양한 전략을 구사할 수 있습니다.</li>
+			<li>쉬운 규칙: 바둑의 복잡한 규칙을 단순화하여 초보자도 쉽게 접근할 수 있습니다.</li>
+		</ul>
 
-<div class="container">
-	<h2>Home</h2>
-	<p>{$i18n('home.main.1')}</p>
-	<p>{@html $i18n('home.main.2')}</p>
-	<p>{$i18n('home.main.3')}</p>
-
-	<h2>How to play</h2>
-	<p>{@html $i18n('home.howto.1')}</p>
-	<p>{@html $i18n('home.howto.2')}</p>
-
-	<h2>{$i18n('home.rules.title')}</h2>
-	<p>{$i18n('home.rules.1')}</p>
-	<p>{@html $i18n('home.rules.2')}</p>
-	<p>{@html $i18n('home.rules.3')}</p>
-	<p>{@html $i18n('home.rules.4')}</p>
-	<p>{$i18n('home.rules.5')}</p>
-	<p>{$i18n('home.rules.6')}</p>
-
-	<h2>About this project</h2>
-	<p>{$i18n('home.about.1')}</p>
-	<p>{$i18n('home.about.2')}</p>
-	<p>This project is a side project of a junior dev.</p>
-</div>
-
-<p>0</p>
+		<h2>전략</h2>
+		<ul>
+			<li>
+				최적의 수 선택: 한 턴에 최대한 이득을 볼 수 있는 수를 선택하세요. 성을 배치할 때에는 위험한
+				위치를 피하는 것이 좋습니다.
+			</li>
+			<li>
+				상대방의 수 관찰: 상대의 전략을 파악하고 약점을 공략하세요. 상대의 의도를 읽고 대응 전략을
+				세우는 것이 중요합니다.
+			</li>
+		</ul>
+	</article>
+</main>
 
 <style>
 	.container {
-		width: 80%;
+		width: 75%;
 		background: white;
 		padding: 20px;
 		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
