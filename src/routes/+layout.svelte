@@ -3,8 +3,8 @@
 	import { userInfoStore } from '$lib';
 
 	const navbar = [
-		{ route: 'HOME', url: '/' },
-		{ route: 'PLAY', url: '/lobby' }
+		{ route: 'PLAY', url: '/lobby' },
+		{ route: 'GUIDE', url: '/guide' }
 	];
 	$: user = $userInfoStore.Authorized ? $userInfoStore.Id : 'LOG IN';
 </script>
@@ -13,7 +13,6 @@
 	<title>그레이트 킹덤 온라인 - Great Kingdom Online</title>
 	<meta name="rating" content="Safe For Kids" />
 	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
-	<meta charset="utf-8" />
 	<meta name="robots" content="all" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
@@ -23,17 +22,18 @@
 	/>
 	<meta
 		name="keywords"
-		content="그레이트 킹덤, 이세돌, 보드게임, 바둑, 전략 게임, 온라인 보드게임, 위즈스톤"
+		content="그레이트 킹덤, 이세돌, 보드게임, 바둑, 추상 전략 게임, 온라인 보드게임, 위즈스톤"
 	/>
 </svelte:head>
 
 <header>
 	<h1>Great Kingdom Online</h1>
 	<nav>
+		<a href="/" class:active={$page.url.pathname === '/'}>HOME</a>
 		{#each navbar as n}
-			<a href={`${n.url}`} class:active={$page.url.pathname === n.url}>{n.route}</a>
+			<a href={`${n.url}`} class:active={$page.url.pathname.includes(n.url)}>{n.route}</a>
 		{/each}
-		<a href="/user" class:active={$page.url.pathname === '/user'}>{user}</a>
+		<a href="/user" class:active={$page.url.pathname.includes('/user')}>{user}</a>
 	</nav>
 </header>
 
@@ -78,5 +78,10 @@
 		min-height: 90vh;
 		margin: 0;
 		background-color: #f4f4f4;
+	}
+
+	footer {
+		background-color: gray;
+		color: white;
 	}
 </style>

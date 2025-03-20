@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount, tick } from 'svelte';
-	import { authorizedApi, connectWebSocket, userInfoStore, WS_URL, type Authorization } from '$lib';
+	import { connectWebSocket, userInfoStore, WS_URL } from '$lib';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import type { Writable } from 'svelte/store';
@@ -21,7 +21,7 @@
 			Playing: boolean;
 		};
 	};
-	let defaultTable: GameTable = {
+	let table: GameTable = {
 		GameTableId: '',
 		GameTableName: '',
 		Connections: [],
@@ -35,15 +35,14 @@
 		}
 	};
 
-	$: isHost =
-		defaultTable.Players.length > 0 ? defaultTable.Players[0] === $userInfoStore.Id : false;
-	$: isPlayer = defaultTable.Players.includes($userInfoStore.Id);
-	$: turnColor = defaultTable.Game.Playing
-		? defaultTable.Game.Turn % 2 === 1
+	$: isHost = table.Players.length > 0 ? table.Players[0] === $userInfoStore.Id : false;
+	$: isPlayer = table.Players.includes($userInfoStore.Id);
+	$: turnColor = table.Game.Playing
+		? table.Game.Turn % 2 === 1
 			? 'turn-blue'
 			: 'turn-orange'
 		: 'turn-nobody';
-	$: color = defaultTable.Game.Turn % 2 === 1 ? 'blue' : 'orange';
+	$: color = table.Game.Turn % 2 === 1 ? 'blue' : 'orange';
 
 	let chat: string[] = [];
 	let chatDiv: HTMLDivElement;
@@ -52,8 +51,9 @@
 	const handler = (data: any) => {
 		if (data.EventType === 'CHAT') {
 			chat = [...chat, data.Chat];
+			tick().then(() => chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' }));
 		} else if (data.EventType === 'TABLE') {
-			defaultTable = { ...defaultTable, ...data };
+			table = { ...table, ...data };
 		} else {
 			console.log(data);
 		}
@@ -91,30 +91,33 @@
 		chatInput = '';
 	};
 	const startGame = () => {
-		socket.send(JSON.stringify({ action: 'move', Start: true }));
+		socket.send(JSON.stringify({ action: 'table', EventType: 2 }));
 	};
 	const doSingleMove = (r: Number, c: Number) => {
-		socket.send(JSON.stringify({ action: 'move', Point: { R: r, C: c } }));
+		socket.send(JSON.stringify({ action: 'table', EventType: 3, Move: { R: r, C: c } }));
 	};
 	const doPassMove = () => {
-		socket.send(JSON.stringify({ action: 'move', Pass: true }));
+		socket.send(JSON.stringify({ action: 'table', EventType: 3, Pass: true }));
+	};
+	const surrender = () => {
+		socket.send(JSON.stringify({ action: 'table', EventType: 3, Surrender: true }));
 	};
 	const movePlayerSlot = () => {
-		socket.send(JSON.stringify({ action: 'slot' }));
+		socket.send(JSON.stringify({ action: 'table', EventType: 4 }));
 	};
 </script>
 
 <div class="game">
 	<table class={turnColor}>
-		{#each defaultTable.Game.Board as r, i}
+		{#each table.Game.Board as r, i}
 			<tr>
 				{#each r as c, j}
 					<td
 						><button
 							class={`cell cellstatus${c}`}
-							disabled={!defaultTable.Game.Playing ||
+							disabled={!table.Game.Playing ||
 								c !== 0 ||
-								defaultTable.CoinToss[(defaultTable.Game.Turn - 1) % 2] !== $userInfoStore.Id}
+								table.CoinToss[(table.Game.Turn - 1) % 2] !== $userInfoStore.Id}
 							on:click={() => doSingleMove(i, j)}
 						></button></td
 					>
@@ -124,20 +127,20 @@
 	</table>
 	<button
 		on:click={doPassMove}
-		disabled={!defaultTable.Game.Playing ||
-			defaultTable.CoinToss[(defaultTable.Game.Turn - 1) % 2] !== $userInfoStore.Id}
+		disabled={!table.Game.Playing ||
+			table.CoinToss[(table.Game.Turn - 1) % 2] !== $userInfoStore.Id}
 	>
-		{defaultTable.Game.Playing && defaultTable.Game.PassFlag ? 'Opponent Passed' : 'Pass'}
+		{table.Game.Playing && table.Game.PassFlag ? 'Opponent Passed' : 'Pass'}
 	</button>
 
 	<div class="info">
 		<div class="game-info">
-			<p><b>Table </b>{defaultTable.GameTableName}</p>
-			{#if !defaultTable.Game.Playing}
+			<p><b>Table </b>{table.GameTableName}</p>
+			{#if !table.Game.Playing}
 				<p>Get Ready!</p>
 			{:else}
-				<p>Turn {defaultTable.Game.Turn}</p>
-				<p class={color}>{defaultTable.CoinToss[(defaultTable.Game.Turn - 1) % 2]}</p>
+				<p>Turn {table.Game.Turn}</p>
+				<p class={color}>{table.CoinToss[(table.Game.Turn - 1) % 2]}</p>
 			{/if}
 		</div>
 		<div bind:this={chatDiv} class="chat-box">
@@ -149,25 +152,27 @@
 			<input type="text" bind:value={chatInput} disabled={!$authorized} />
 			<button>CHAT</button>
 		</form>
-		<button on:click={startGame} disabled={!isHost || defaultTable.Players.length !== 2}
-			>START</button
-		>
+		{#if table.Game.Playing}
+			<button on:click={surrender}>SURRENDER</button>
+		{:else}
+			<button on:click={startGame} disabled={!isHost || table.Players.length !== 2}>START</button>
+		{/if}
 		<button on:click={movePlayerSlot}>Move to {isPlayer ? 'spectators' : 'players'} </button>
 	</div>
 
 	<div class="user">
 		<div class="user-box">
 			<b>Players</b>
-			{#if defaultTable.Players.length > 0}
+			{#if table.Players.length > 0}
 				<span>
-					👑 {defaultTable.Players[0]}
+					👑 {table.Players[0]}
 				</span>
 			{:else}
 				<span>empty</span>
 			{/if}
-			{#if defaultTable.Players.length > 1}
+			{#if table.Players.length > 1}
 				<span>
-					🕹️ {defaultTable.Players[1]}
+					🕹️ {table.Players[1]}
 				</span>
 			{:else}
 				<span>empty</span>
@@ -176,8 +181,8 @@
 		<div class="user-box spec">
 			<b>Spectators</b>
 			<div>
-				{#each defaultTable.Connections as c}
-					{#if !defaultTable.Players.some((e) => e === c.UserId)}
+				{#each table.Connections as c}
+					{#if !table.Players.some((e) => e === c.UserId)}
 						<span>{c.UserId}</span>
 					{/if}
 				{/each}
@@ -256,6 +261,7 @@
 
 	table {
 		border-spacing: 5px;
+		border-collapse: collapse;
 	}
 	.turn-nobody {
 		border: 5px solid gray;
@@ -265,6 +271,10 @@
 	}
 	.turn-orange {
 		border: 5px solid orange;
+	}
+
+	td {
+		padding: 0;
 	}
 
 	.cell {

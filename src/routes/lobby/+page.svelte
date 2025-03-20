@@ -2,7 +2,8 @@
 	import { building } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { authorizedApi, connectWebSocket, userInfoStore, WS_URL } from '$lib';
-	import { onDestroy, onMount } from 'svelte';
+	import { isAxiosError } from 'axios';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import type { Writable } from 'svelte/store';
 
 	type GameTable = {
@@ -13,25 +14,31 @@
 
 	const getGameTables = async () => {
 		try {
-			let res = await authorizedApi.get<GameTable[]>('/tables');
+			let res = await authorizedApi.get<GameTable[]>('/table');
 			return res.data;
 		} catch (error) {
-			console.log(error);
-			throw new Error('error getlobbies');
+			if (isAxiosError(error)) {
+				throw new Error(error.response?.data.message);
+			} else {
+				console.log(error);
+				throw new Error('error');
+			}
 		}
 	};
 	let getTablesPromise = getGameTables();
 
-	let chat = ['connecting...'];
+	let chat: string[] = [];
 	let chatDiv: HTMLDivElement;
-	$: if (chat && chatDiv) {
-		chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
-	}
 
 	const handler = (data: any) => {
 		if (data.EventType === 'CHAT') {
 			const { Chat }: { Chat: string } = data;
 			chat = [...chat, Chat];
+			tick().then(() => {
+				const { scrollTop, scrollHeight, clientHeight } = chatDiv;
+				if (scrollTop + clientHeight >= scrollHeight - 50)
+					chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
+			});
 		} else {
 			console.log(data);
 		}
@@ -43,7 +50,6 @@
 	const unsub = userInfoStore.subscribe((v) => {
 		cleanUp();
 		if (!v.Authorized) return;
-
 		[socket, authorized, cleanUp] = connectWebSocket(`${WS_URL}?GameTableId=globalchat`, handler);
 	});
 
@@ -133,7 +139,7 @@
 			<input
 				bind:value={chatInput}
 				disabled={!$authorized}
-				placeholder="You can play with maintainer, he will be alarmed by chat messages"
+				placeholder="You can chat or write down the improvements here"
 			/>
 			<button type="submit">Send</button>
 		</form>
@@ -162,7 +168,7 @@
 		margin: 0;
 	}
 	.container {
-		width: 80%;
+		width: 65%;
 		background: white;
 		padding: 20px;
 		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -183,7 +189,7 @@
 		gap: 10px;
 		max-height: 400px;
 		overflow-y: auto;
-		border: 1px solid #ccc;
+		/* border: 1px solid #ccc; */
 	}
 	.lobby {
 		all: unset;

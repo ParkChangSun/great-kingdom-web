@@ -44,7 +44,7 @@
 		} catch (error) {
 			if (isAxiosError(error)) {
 				signInMessage = error.response?.data.message;
-			} else if (error instanceof Error) signInMessage = error.message;
+			} else console.log(error);
 		}
 	};
 
@@ -128,12 +128,18 @@
 			<p>WINs : {u.W}</p>
 			<p>LOSSes : {u.L}</p>
 			{#if u.RecentGames.length === 0}
-				<p>no games found</p>
+				<p>No game history</p>
 			{:else}
 				<div class="game-history">
 					{#each u.RecentGames as g}
-						<div class={`game-history-item ${g.WinnerId === u.UserId ? 'win' : 'lose'}`}>
+						<div class={`game-history-item`}>
+							{#if g.WinnerId === g.BlueId}
+								🏆
+							{/if}
 							{g.BlueId} VS {g.OrangeId}
+							{#if g.WinnerId === g.OrangeId}
+								🏆
+							{/if}
 						</div>
 					{/each}
 				</div>
@@ -205,11 +211,6 @@
 		padding: 10px;
 		margin-bottom: 5px;
 		border-radius: 5px;
-	}
-	.win {
-		background-color: lightblue;
-	}
-	.loss {
-		background-color: lightcoral;
+		border: 1px solid black;
 	}
 </style>
