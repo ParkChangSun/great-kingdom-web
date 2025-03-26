@@ -25,6 +25,11 @@ export type Authorization = {
 
 export const userInfoStore = persistentStore<Authorization>("USERINFO", { Authorized: false, Id: '', AccessToken: "" })
 
+export const unauthorizedApi = axios.create({
+	baseURL: REST_URL,
+	withCredentials: true
+});
+
 const authorizedApi = axios.create({
 	baseURL: REST_URL,
 	withCredentials: true
@@ -49,17 +54,6 @@ authorizedApi.interceptors.response.use(
 					repeatReq.headers!["Authorization"] = auth.AccessToken
 					return authorizedApi(repeatReq);
 				}
-				// try {
-				// 	const auth = await roatateToken()
-				// 	userInfoStore.set(auth)
-				// 	if (auth.Authorized) {
-				// 		repeatReq.headers!["Authorization"] = auth.AccessToken
-				// 		return authorizedApi(repeatReq);
-				// 	}
-				// } catch (error) {
-				// 	userInfoStore.set({ Authorized: false, AccessToken: "", Id: "" })
-				// 	return Promise.reject(error);
-				// }
 			}
 		}
 		return Promise.reject(error);
@@ -111,39 +105,23 @@ export const connectWebSocket = (url: string, handler: (data: any) => void): [We
 		console.log(e);
 		cleanUp()
 	});
-	// socket.addEventListener('error', (e) => {
-	// 	console.log(e);
-	// 	cleanUp()
-	// });
 	socket.addEventListener('message', async (e) => {
 		const data = JSON.parse(e.data);
 		if (data.EventType === 'AUTH') {
 			if (data.Auth) {
 				authorized.set(true)
 			} else {
-				// cleanUp()
 				roatateToken()
-				// try {
-				// 	const auth = await roatateToken()
-				// 	userInfoStore.set(auth)
-				// } catch (error) {
-				// 	userInfoStore.set({ Authorized: false, AccessToken: "", Id: "" })
-				// }
 			}
 		} else if (data.EventType === 'PONG') {
 			console.log('pong')
+		} else {
+			handler(data)
 		}
-
-		handler(data)
 	});
 
 	return [socket, authorized, cleanUp]
 }
-
-export const unauthorizedApi = axios.create({
-	baseURL: REST_URL,
-	withCredentials: true
-});
 
 // export const locale = writable("en");
 // export const i18n = derived(locale, ($locale) => (exprKey: string, vars: string[] = []) => {

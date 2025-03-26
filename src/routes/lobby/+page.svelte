@@ -18,7 +18,8 @@
 			return res.data;
 		} catch (error) {
 			if (isAxiosError(error)) {
-				throw new Error(error.response?.data.message);
+				console.log(error.response?.data.message);
+				throw new Error('log in first');
 			} else {
 				console.log(error);
 				throw new Error('error');

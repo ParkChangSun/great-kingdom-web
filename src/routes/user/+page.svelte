@@ -29,6 +29,7 @@
 	let signInPass = '';
 	let signInMessage = '';
 
+	let prom: Promise<void>;
 	const handleSignin = async () => {
 		if (signInId === '' || signInPass === '') {
 			signInMessage = 'invalid input';
@@ -97,14 +98,20 @@
 
 <div class="container">
 	{#if mode === 'signin'}
-		<form class="signin" on:submit|preventDefault={handleSignin}>
+		<form class="signin" on:submit|preventDefault={() => (prom = handleSignin())}>
 			<h2>SIGN IN</h2>
 			<input bind:value={signInId} placeholder="ID" />
 			<input type="password" bind:value={signInPass} placeholder="PASSWORD" />
 			{#if signInMessage !== ''}
 				<p class="error">{signInMessage}</p>
 			{/if}
-			<button class="submit-button" type="submit">SIGN IN</button>
+			<button class="submit-button" type="submit">
+				{#await prom}
+					⏳
+				{:then v}
+					SIGN IN
+				{/await}
+			</button>
 			<button class="toggle-button" on:click={() => (mode = 'signup')}>Go To Sign Up</button>
 		</form>
 	{:else if mode === 'signup'}
