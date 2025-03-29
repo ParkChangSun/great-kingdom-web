@@ -99,32 +99,34 @@
 <div class="container">
 	{#if mode === 'signin'}
 		<form class="signin" on:submit|preventDefault={() => (prom = handleSignin())}>
-			<h2>SIGN IN</h2>
+			<h2>로그인</h2>
 			<input bind:value={signInId} placeholder="ID" />
 			<input type="password" bind:value={signInPass} placeholder="PASSWORD" />
 			{#if signInMessage !== ''}
 				<p class="error">{signInMessage}</p>
 			{/if}
-			<button class="submit-button" type="submit">
-				{#await prom}
-					⏳
-				{:then v}
-					SIGN IN
-				{/await}
-			</button>
-			<button class="toggle-button" on:click={() => (mode = 'signup')}>Go To Sign Up</button>
+			{#await prom}
+				<button class="submit-button" type="submit" disabled> ⏳ </button>
+			{:then v}
+				<button class="submit-button" type="submit"> 로그인 </button>
+			{/await}
+			<button class="toggle-button" on:click={() => (mode = 'signup')}>가입</button>
 		</form>
 	{:else if mode === 'signup'}
-		<form class="signup" on:submit|preventDefault={handleSignUp}>
-			<h2>SIGN UP</h2>
+		<form class="signup" on:submit|preventDefault={() => (prom = handleSignUp())}>
+			<h2>가입</h2>
 			<input bind:value={signUpId} placeholder="ID" />
 			<input type="password" bind:value={signUpPass} placeholder="PASSWORD" />
 			<input type="password" bind:value={signUpPassConfirm} placeholder="PASSWORD CONFIRM" />
 			{#if signUpMessage !== ''}
 				<p class="error">{signUpMessage}</p>
 			{/if}
-			<button class="submit-button" type="submit">SIGN UP</button>
-			<button class="toggle-button" on:click={() => (mode = 'signin')}>Go To Sign In</button>
+			{#await prom}
+				<button class="submit-button" type="submit" disabled> ⏳ </button>
+			{:then v}
+				<button class="submit-button" type="submit"> 가입 </button>
+			{/await}
+			<button class="toggle-button" on:click={() => (mode = 'signin')}>로그인</button>
 		</form>
 	{:else}
 		{#await getUserPromise}

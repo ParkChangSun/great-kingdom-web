@@ -13,33 +13,37 @@
 			UserId: string;
 		}[];
 		Players: string[];
-		CoinToss: string[];
 		Game: {
+			CoinToss: string[];
 			Board: number[][];
 			Turn: number;
 			PassFlag: boolean;
 			Playing: boolean;
+			RemainingTime: number[];
+			LastMoveTime: number;
+			LastMove: { R: number; C: number } | null;
 		};
-		RemainingTime: number[];
 	};
 	let table: GameTable = {
 		GameTableId: '',
 		GameTableName: '',
 		Connections: [],
 		Players: [],
-		CoinToss: ['', ''],
 		Game: {
+			CoinToss: ['', ''],
 			Board: new Array(9).fill(0).map(() => new Array(9).fill(0)),
 			Turn: 0,
 			PassFlag: false,
-			Playing: false
-		},
-		RemainingTime: []
+			Playing: false,
+			RemainingTime: [0, 0],
+			LastMoveTime: 0,
+			LastMove: null
+		}
 	};
 
 	$: isHost = table.Players.length > 0 ? table.Players[0] === $userInfoStore.Id : false;
 	$: isPlayer = table.Players.includes($userInfoStore.Id);
-	$: isMyTurn = table.CoinToss[(table.Game.Turn - 1) % 2] === $userInfoStore.Id;
+	$: isMyTurn = table.Game.CoinToss[(table.Game.Turn - 1) % 2] === $userInfoStore.Id;
 
 	let chat: string[] = [];
 	let chatDiv: HTMLDivElement;
@@ -52,9 +56,9 @@
 	let kickable = false;
 
 	let blueTimer: NodeJS.Timeout;
-	let blueTime: number;
+	let blueTime: number = 0;
 	let orangeTimer: NodeJS.Timeout;
-	let orangeTime: number;
+	let orangeTime: number = 0;
 
 	const handler = (data: any) => {
 		if (data.EventType === 'CHAT') {
@@ -68,12 +72,12 @@
 			clearInterval(orangeTimer);
 
 			if (table.Game.Playing) {
-				blueTime = table.RemainingTime[0];
-				orangeTime = table.RemainingTime[1];
+				blueTime = table.Game.RemainingTime[0];
+				orangeTime = table.Game.RemainingTime[1];
 
 				if (table.Game.Turn % 2 === 1) {
 					blueTimer = setInterval(() => {
-						blueTime -= 1000;
+						blueTime = table.Game.RemainingTime[0] - (Date.now() - table.Game.LastMoveTime);
 						if (blueTime <= 0) {
 							kickable = true;
 							clearInterval(blueTimer);
@@ -81,7 +85,7 @@
 					}, 1000);
 				} else {
 					orangeTimer = setInterval(() => {
-						orangeTime -= 1000;
+						orangeTime = table.Game.RemainingTime[1] - (Date.now() - table.Game.LastMoveTime);
 						if (orangeTime <= 0) {
 							kickable = true;
 							clearInterval(orangeTimer);
@@ -152,44 +156,49 @@
 					class={`cell cellstatus${cell}`}
 					disabled={!table.Game.Playing || cell !== 0 || !isMyTurn}
 					on:click={() => doSingleMove(r, c)}
-				></button>
+				>
+					{#if table.Game.LastMove && table.Game.LastMove.R === r && table.Game.LastMove.C === c}
+						<div class="last-move"></div>
+					{/if}
+				</button>
 			{/each}
 		{/each}
 	</div>
 
-	<div class="buttons">
-		<button on:click={doPassMove} disabled={!table.Game.Playing || !isMyTurn} class="game-btn">
+	<div class="section">
+		<button
+			on:click={doPassMove}
+			disabled={!table.Game.Playing || !isMyTurn}
+			class={`game-btn ${table.Game.PassFlag ? 'passed' : ''}`}
+		>
 			{table.Game.Playing && table.Game.PassFlag ? 'Count' : 'Pass'}
 		</button>
-		<button on:click={surrender} disabled={!table.Game.Playing || !isMyTurn} class="game-btn"
-			>Surrender</button
-		>
+		<button on:click={surrender} disabled={!table.Game.Playing || !isMyTurn} class="game-btn">
+			Surrender
+		</button>
 	</div>
 
 	<div class="section info-chat-section">
 		<div class="box">
-			{#if !table.Game.Playing}
-				<p class="info-head">{table.GameTableName}</p>
-			{:else}
-				<p class="info-head">Turn {table.Game.Turn}</p>
-				<span class={`${table.Game.Turn % 2 === 1 ? 'blue' : ''} turn-count`}>
-					<span>{table.CoinToss[0]}</span>
-					<span>
-						{Math.floor(blueTime / 60000)}:{String(Math.floor((blueTime % 60000) / 1000)).padStart(
-							2,
-							'0'
-						)}
-					</span>
+			<p class="info-head">{table.GameTableName}</p>
+			<p class="info-head">Turn {table.Game.Turn}</p>
+			<span class={`${table.Game.Turn % 2 === 1 ? 'blue' : ''} turn-count`}>
+				<span>{table.Game.CoinToss[0]}</span>
+				<span>
+					{Math.floor(blueTime / 60000)}:{String(Math.floor((blueTime % 60000) / 1000)).padStart(
+						2,
+						'0'
+					)}
 				</span>
-				<span class={`${table.Game.Turn % 2 !== 1 ? 'orange' : ''} turn-count`}>
-					<span>{table.CoinToss[1]}</span>
-					<span>
-						{Math.floor(orangeTime / 60000)}:{String(
-							Math.floor((orangeTime % 60000) / 1000)
-						).padStart(2, '0')}
-					</span>
+			</span>
+			<span class={`${table.Game.Turn % 2 !== 1 ? 'orange' : ''} turn-count`}>
+				<span>{table.Game.CoinToss[1]}</span>
+				<span>
+					{Math.floor(orangeTime / 60000)}:{String(
+						Math.floor((orangeTime % 60000) / 1000)
+					).padStart(2, '0')}
 				</span>
-			{/if}
+			</span>
 		</div>
 		<div bind:this={chatDiv} class="box chat-box">
 			{#each chat as c}
@@ -200,44 +209,55 @@
 			<input type="text" bind:value={chatInput} disabled={!$authorized} />
 			<button on:click={sendMessage}>CHAT</button>
 		</div>
-		{#if kickable}
-			<button on:click={kick} disabled={!isPlayer || !table.Game.Playing}>KICK AFK</button>
-		{:else}
-			<button
-				on:click={startGame}
-				disabled={!isHost || table.Players.length !== 2 || table.Game.Playing}>START</button
-			>
-		{/if}
-		<button on:click={movePlayerSlot}>Move to {isPlayer ? 'spectators' : 'players'} </button>
+		<div class="info-btn">
+			{#if kickable}
+				<button
+					on:click={kick}
+					class="game-btn"
+					disabled={!isPlayer || !table.Game.Playing || isMyTurn}
+				>
+					KICK AFK
+				</button>
+			{:else}
+				<button
+					on:click={startGame}
+					class="game-btn"
+					disabled={!isHost || table.Players.length !== 2 || table.Game.Playing}
+				>
+					START
+				</button>
+			{/if}
+			<button on:click={movePlayerSlot} disabled={table.Game.Playing} class="game-btn">
+				{isPlayer ? 'Watch' : 'Play'}
+			</button>
+		</div>
 	</div>
 
 	<div class="section user-section">
 		<div class="box">
 			<b>Players</b>
-			{#if table.Players.length > 0}
-				<span>
+			<span>
+				{#if table.Players.length > 0}
 					👑 {table.Players[0]}
-				</span>
-			{:else}
-				<span>empty</span>
-			{/if}
-			{#if table.Players.length > 1}
-				<span>
+				{:else}
+					👑 empty
+				{/if}
+			</span>
+			<span>
+				{#if table.Players.length > 1}
 					🕹️ {table.Players[1]}
-				</span>
-			{:else}
-				<span>empty</span>
-			{/if}
+				{:else}
+					🕹️ empty
+				{/if}
+			</span>
 		</div>
 		<div class="box spectators">
 			<b>Spectators</b>
-			<div>
-				{#each table.Connections as c}
-					{#if !table.Players.some((e) => e === c.UserId)}
-						<span>{c.UserId}</span>
-					{/if}
-				{/each}
-			</div>
+			{#each table.Connections as c}
+				{#if !table.Players.some((e) => e === c.UserId)}
+					<span>{c.UserId}</span>
+				{/if}
+			{/each}
 		</div>
 	</div>
 
@@ -263,6 +283,9 @@
 	.cell {
 		width: 50px;
 		height: 50px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
 	}
 	.cellstatus1 {
 		background-color: white;
@@ -282,12 +305,21 @@
 	.cellstatus6 {
 		background-color: red;
 	}
-	.buttons {
-		display: flex;
-		flex-direction: column;
+	.last-move {
+		width: 20px;
+		height: 20px;
+		background-color: green;
+		border-radius: 50%;
 	}
 	.game-btn {
-		flex-grow: 1;
+		flex: 1 1 50%;
+	}
+	.passed {
+		border: 5px green solid;
+		box-sizing: border-box;
+	}
+	.passed:hover {
+		background: whitesmoke;
 	}
 
 	.box {
@@ -325,13 +357,18 @@
 
 	.chat-box {
 		overflow-y: scroll;
-		height: 25rem;
+		flex-grow: 1;
 	}
 	.chat-input {
 		display: flex;
 	}
 	.chat-input > input {
 		flex-grow: 1;
+	}
+
+	.info-btn {
+		display: flex;
+		gap: 5px;
 	}
 
 	.user-section {

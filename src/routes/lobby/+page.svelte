@@ -12,9 +12,12 @@
 		Players: string[];
 	};
 
+	let getTablesBtn = false;
 	const getGameTables = async () => {
+		getTablesBtn = true;
 		try {
 			let res = await authorizedApi.get<GameTable[]>('/table');
+			getTablesBtn = false;
 			return res.data;
 		} catch (error) {
 			if (isAxiosError(error)) {
@@ -95,13 +98,20 @@
 	<div class="lobby-header">
 		<h2>Play Great Kingdom</h2>
 		<div class="lobby-header-buttons">
-			<button on:click={() => (isPopupOpened = !isPopupOpened)}>Create Lobby</button>
-			<button on:click={() => (getTablesPromise = getGameTables())}>Reload List</button>
+			<button
+				on:click={() => (isPopupOpened = !isPopupOpened)}
+				disabled={!$userInfoStore.Authorized || getTablesBtn}
+			>
+				Create Game
+			</button>
+			<button on:click={() => (getTablesPromise = getGameTables())} disabled={getTablesBtn}>
+				Reload
+			</button>
 		</div>
 	</div>
 	<div class="lobby-grid">
 		{#await getTablesPromise}
-			<p>loading</p>
+			<p>⏳</p>
 		{:then lobbies}
 			{#if lobbies.length === 0}
 				<p>No game found</p>
@@ -129,7 +139,7 @@
 			<p>{e.message}</p>
 		{/await}
 	</div>
-	<div class="chat-container">
+	<div class="chat">
 		<h2>Chat</h2>
 		<div class="chat-box" bind:this={chatDiv}>
 			{#each chat as c}
@@ -140,7 +150,7 @@
 			<input
 				bind:value={chatInput}
 				disabled={!$authorized}
-				placeholder="You can chat or write down the improvements here"
+				placeholder={$authorized ? 'Send chat message' : 'Connecting...'}
 			/>
 			<button type="submit">Send</button>
 		</form>
@@ -148,9 +158,9 @@
 
 	{#if isPopupOpened}
 		<div class="popup-container">
-			<h2>Create Lobby</h2>
+			<h2>Create Game</h2>
 			{#await createTablePromise}
-				<p>loading</p>
+				<p>⏳</p>
 			{:then}
 				<form class="popup" on:submit|preventDefault={createTable}>
 					<label>Name <input bind:value={tableNameInput} /></label><br />
@@ -175,6 +185,7 @@
 		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 		border-radius: 10px;
 	}
+
 	.lobby-header {
 		display: flex;
 		justify-content: space-between;
@@ -184,13 +195,13 @@
 	.lobby-header-buttons {
 		display: flex;
 	}
+
 	.lobby-grid {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
 		gap: 10px;
 		max-height: 400px;
 		overflow-y: auto;
-		/* border: 1px solid #ccc; */
 	}
 	.lobby {
 		all: unset;
@@ -225,7 +236,8 @@
 		flex-direction: column;
 		align-items: flex-end;
 	}
-	.chat-container {
+
+	.chat {
 		display: flex;
 		flex-direction: column;
 		margin-top: 20px;
@@ -246,6 +258,7 @@
 		flex: 1;
 		padding: 5px;
 	}
+
 	.popup-container {
 		position: fixed;
 		top: 50%;
