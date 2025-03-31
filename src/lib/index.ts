@@ -84,43 +84,59 @@ const roatateToken = async () => {
 	return rotateTokenPromise
 }
 
-export const connectWebSocket = (url: string, handler: (data: any) => void): [WebSocket, Writable<boolean>, () => void] => {
-	const socket = new WebSocket(url)
-	let ping = setInterval(() => {
-		if (socket) {
-			socket.send(JSON.stringify({ action: 'ping' }));
-		}
-	}, 540000);
+export class WebSocketManager {
+	socket: WebSocket | null = null
+	authorized = writable(false)
+	pingTimeout!: NodeJS.Timeout
 
-	const cleanUp = () => {
-		clearInterval(ping);
-		socket.close();
+	constructor(
+		private url: string,
+		private handler: (data: any) => void,
+		private onClose: () => void = () => { }
+	) { }
+
+	cleanUp() {
+		clearInterval(this.pingTimeout);
+		if (this.socket) this.socket.close();
 	}
-	const authorized = writable(false)
-
-	socket.addEventListener('open', () => {
-		socket.send(JSON.stringify({ action: 'auth', Authorization: get(userInfoStore).AccessToken }));
-	});
-	socket.addEventListener('close', (e) => {
-		console.log(e);
-		cleanUp()
-	});
-	socket.addEventListener('message', async (e) => {
-		const data = JSON.parse(e.data);
-		if (data.EventType === 'AUTH') {
-			if (data.Auth) {
-				authorized.set(true)
+	connect() {
+		this.socket = new WebSocket(this.url)
+		this.socket.addEventListener('open', () => {
+			this.send({ action: 'auth', Authorization: get(userInfoStore).AccessToken });
+		});
+		this.socket.addEventListener('close', (e) => {
+			console.log(e);
+			this.cleanUp()
+			this.onClose()
+		});
+		this.socket.addEventListener('message', async (e) => {
+			const data = JSON.parse(e.data);
+			if (data.EventType === 'AUTH') {
+				if (data.Auth) {
+					this.authorized.set(true)
+				} else {
+					// ws is closed here by server... or client should do?
+					roatateToken()
+				}
+			} else if (data.EventType === 'PONG') {
+				console.log('pong')
 			} else {
-				roatateToken()
+				this.handler(data)
 			}
-		} else if (data.EventType === 'PONG') {
-			console.log('pong')
-		} else {
-			handler(data)
-		}
-	});
-
-	return [socket, authorized, cleanUp]
+		});
+		this.pingTimeout = setInterval(() => {
+			this.send({ action: 'ping' });
+		}, 540000);
+	}
+	send(p: any) {
+		if (this.socket) this.socket.send(JSON.stringify(p));
+	}
+	isClosed() {
+		return this.socket && (this.socket.readyState === this.socket.CLOSING || this.socket.readyState === this.socket.CLOSED)
+	}
+	getAuthorized() {
+		return this.authorized
+	}
 }
 
 // export const locale = writable("en");

@@ -1,9 +1,8 @@
 <script lang="ts">
-	import { onDestroy, onMount, tick } from 'svelte';
-	import { connectWebSocket, userInfoStore, WS_URL } from '$lib';
+	import { onDestroy, tick } from 'svelte';
+	import { userInfoStore, WebSocketManager, WS_URL } from '$lib';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { writable, type Writable } from 'svelte/store';
 	import { browser, building } from '$app/environment';
 
 	type GameTable = {
@@ -48,79 +47,64 @@
 	let chat: string[] = [];
 	let chatDiv: HTMLDivElement;
 	let chatInput: string;
-	const sendMessage = () => {
-		socket.send(JSON.stringify({ action: 'chat', Chat: chatInput }));
-		chatInput = '';
-	};
 
 	let kickable = false;
-
-	let blueTimer: NodeJS.Timeout;
 	let blueTime: number = 0;
-	let orangeTimer: NodeJS.Timeout;
 	let orangeTime: number = 0;
+	let timer: NodeJS.Timeout;
 
 	const handler = (data: any) => {
 		if (data.EventType === 'CHAT') {
 			chat = [...chat, data.Chat];
 			tick().then(() => chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' }));
 		} else if (data.EventType === 'TABLE') {
-			kickable = false;
 			table = { ...table, ...data };
 
-			clearInterval(blueTimer);
-			clearInterval(orangeTimer);
+			kickable = false;
+			clearInterval(timer);
 
 			if (table.Game.Playing) {
 				blueTime = table.Game.RemainingTime[0];
 				orangeTime = table.Game.RemainingTime[1];
 
-				if (table.Game.Turn % 2 === 1) {
-					blueTimer = setInterval(() => {
+				timer = setInterval(() => {
+					if (table.Game.Turn % 2 === 1) {
 						blueTime = table.Game.RemainingTime[0] - (Date.now() - table.Game.LastMoveTime);
-						if (blueTime <= 0) {
-							kickable = true;
-							clearInterval(blueTimer);
-						}
-					}, 1000);
-				} else {
-					orangeTimer = setInterval(() => {
+					} else {
 						orangeTime = table.Game.RemainingTime[1] - (Date.now() - table.Game.LastMoveTime);
-						if (orangeTime <= 0) {
-							kickable = true;
-							clearInterval(orangeTimer);
-						}
-					}, 1000);
-				}
+					}
+					if (blueTime <= 0 || orangeTime <= 0) {
+						kickable = true;
+						clearInterval(timer);
+					}
+				}, 1000);
 			}
 		} else {
 			console.log(data);
 		}
 	};
 
-	let socket: WebSocket;
-	let authorized: Writable<boolean>;
-	let cleanUp = () => {};
-
+	const wsm = new WebSocketManager(
+		`${WS_URL}?GameTableId=${!building ? $page.url.searchParams.get('tableId') : ''}`,
+		handler
+	);
+	let wsAuthed = wsm.getAuthorized();
 	const unsub = userInfoStore.subscribe(async (v) => {
-		cleanUp();
 		if (!v.Authorized) {
 			browser && goto('/lobby');
+			return;
 		}
 
-		[socket, authorized, cleanUp] = connectWebSocket(
-			`${WS_URL}?GameTableId=${!building ? $page.url.searchParams.get('tableId') : ''}`,
-			handler
-		);
+		wsm.connect();
 	});
 
 	onDestroy(() => {
-		cleanUp();
+		wsm.cleanUp();
 		unsub();
 	});
 
 	beforeNavigate((e) => {
-		if (socket.readyState === socket.CLOSING || socket.readyState === socket.CLOSED) {
+		if (wsm.isClosed()) {
 			return;
 		}
 		if (!confirm('Do you want to leave this game?')) {
@@ -128,23 +112,27 @@
 		}
 	});
 
+	const sendMessage = () => {
+		wsm.send({ action: 'chat', Chat: chatInput });
+		chatInput = '';
+	};
 	const startGame = () => {
-		socket.send(JSON.stringify({ action: 'table', EventType: 2 }));
+		wsm.send({ action: 'table', EventType: 2 });
 	};
 	const doSingleMove = (r: Number, c: Number) => {
-		socket.send(JSON.stringify({ action: 'table', EventType: 3, Move: { R: r, C: c } }));
+		wsm.send({ action: 'table', EventType: 3, Move: { R: r, C: c } });
 	};
 	const doPassMove = () => {
-		socket.send(JSON.stringify({ action: 'table', EventType: 3, Pass: true }));
+		wsm.send({ action: 'table', EventType: 3, Pass: true });
 	};
-	const surrender = () => {
-		socket.send(JSON.stringify({ action: 'table', EventType: 3, Surrender: true }));
+	const resign = () => {
+		wsm.send({ action: 'table', EventType: 3, Surrender: true });
 	};
 	const movePlayerSlot = () => {
-		socket.send(JSON.stringify({ action: 'table', EventType: 4 }));
+		wsm.send({ action: 'table', EventType: 4 });
 	};
 	const kick = () => {
-		socket.send(JSON.stringify({ action: 'table', EventType: 5 }));
+		wsm.send({ action: 'table', EventType: 5 });
 	};
 </script>
 
@@ -173,8 +161,8 @@
 		>
 			{table.Game.Playing && table.Game.PassFlag ? 'Count' : 'Pass'}
 		</button>
-		<button on:click={surrender} disabled={!table.Game.Playing || !isMyTurn} class="game-btn">
-			Surrender
+		<button on:click={resign} disabled={!table.Game.Playing || !isMyTurn} class="game-btn">
+			Resign
 		</button>
 	</div>
 
@@ -206,7 +194,7 @@
 			{/each}
 		</div>
 		<div class="chat-input">
-			<input type="text" bind:value={chatInput} disabled={!$authorized} />
+			<input type="text" bind:value={chatInput} disabled={!wsAuthed} />
 			<button on:click={sendMessage}>CHAT</button>
 		</div>
 		<div class="info-btn">
@@ -261,7 +249,7 @@
 		</div>
 	</div>
 
-	{#if !$authorized}
+	{#if !wsAuthed}
 		<div class="popup-container">connecting...</div>
 	{/if}
 </div>

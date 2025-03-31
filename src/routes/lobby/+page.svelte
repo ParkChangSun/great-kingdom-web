@@ -1,10 +1,8 @@
 <script lang="ts">
-	import { building } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { authorizedApi, connectWebSocket, userInfoStore, WS_URL } from '$lib';
+	import { authorizedApi, userInfoStore, WebSocketManager, WS_URL } from '$lib';
 	import { isAxiosError } from 'axios';
-	import { onDestroy, onMount, tick } from 'svelte';
-	import type { Writable } from 'svelte/store';
+	import { onDestroy, tick } from 'svelte';
 
 	type GameTable = {
 		GameTableId: string;
@@ -48,24 +46,23 @@
 		}
 	};
 
-	let socket: WebSocket;
-	let authorized: Writable<boolean>;
-	let cleanUp = () => {};
+	const wsm = new WebSocketManager(`${WS_URL}?GameTableId=globalchat`, handler);
+	let wsAuthed = wsm.getAuthorized();
 	const unsub = userInfoStore.subscribe((v) => {
-		cleanUp();
 		if (!v.Authorized) return;
-		[socket, authorized, cleanUp] = connectWebSocket(`${WS_URL}?GameTableId=globalchat`, handler);
+
+		wsm.connect();
 	});
 
 	onDestroy(() => {
-		cleanUp();
+		wsm.cleanUp();
 		unsub();
 	});
 
 	let chatInput: string = '';
 	const sendChat = () => {
 		if (chatInput === '') return;
-		socket.send(JSON.stringify({ action: 'globalchat', Chat: chatInput }));
+		wsm.send({ action: 'globalchat', Chat: chatInput });
 		chatInput = '';
 	};
 
@@ -149,8 +146,8 @@
 		<form class="chat-input-form" on:submit|preventDefault={sendChat}>
 			<input
 				bind:value={chatInput}
-				disabled={!$authorized}
-				placeholder={$authorized ? 'Send chat message' : 'Connecting...'}
+				disabled={!$wsAuthed}
+				placeholder={$wsAuthed ? 'Send chat message' : 'Connecting...'}
 			/>
 			<button type="submit">Send</button>
 		</form>

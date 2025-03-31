@@ -2,9 +2,9 @@
 	<h2>그레이트 킹덤 온라인 가이드</h2>
 	<div class="guide">
 		<nav>
+			<a href="/guide">📰 공지</a>
 			<a href="/guide/gameplay">👾 게임 규칙</a>
 			<a href="/guide/gametable">🎮 테이블 설명</a>
-			<a href="/guide/news">📰 공지</a>
 		</nav>
 
 		<div>
