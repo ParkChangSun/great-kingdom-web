@@ -1,3 +1,7 @@
+<svelte:head>
+	<title>홈 - 그레이트 킹덤 온라인</title>
+</svelte:head>
+
 <main class="container">
 	<article>
 		<h2>그레이트 킹덤 - Great Kingdom</h2>

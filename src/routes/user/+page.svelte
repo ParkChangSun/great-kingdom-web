@@ -96,6 +96,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>{$userInfoStore.Authorized ? $userInfoStore.Id : '홈'} - 그레이트 킹덤 온라인</title>
+</svelte:head>
+
 <div class="container">
 	{#if mode === 'signin'}
 		<form class="signin" on:submit|preventDefault={() => (prom = handleSignin())}>

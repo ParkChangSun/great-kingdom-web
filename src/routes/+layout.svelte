@@ -10,7 +10,6 @@
 </script>
 
 <svelte:head>
-	<title>그레이트 킹덤 온라인 - Great Kingdom Online</title>
 	<meta name="rating" content="Safe For Kids" />
 	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
 	<meta name="robots" content="all" />

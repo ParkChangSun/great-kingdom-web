@@ -1,3 +1,7 @@
+<svelte:head>
+	<title>가이드 - 룰 - 그레이트 킹덤 온라인</title>
+</svelte:head>
+
 <h2>게임 규칙</h2>
 
 <h3>기본 규칙</h3>

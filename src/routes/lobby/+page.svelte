@@ -91,6 +91,10 @@
 	let isPopupOpened = false;
 </script>
 
+<svelte:head>
+	<title>메인 로비 - 그레이트 킹덤 온라인</title>
+</svelte:head>
+
 <div class="container">
 	<div class="lobby-header">
 		<h2>Play Great Kingdom</h2>

@@ -1,3 +1,7 @@
+<svelte:head>
+	<title>가이드 - 테이블 - 그레이트 킹덤 온라인</title>
+</svelte:head>
+
 <h2>게임 테이블 UI</h2>
 
 <h3>게임 보드</h3>
