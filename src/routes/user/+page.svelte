@@ -32,7 +32,7 @@
 	let prom: Promise<void>;
 	const handleSignin = async () => {
 		if (signInId === '' || signInPass === '') {
-			signInMessage = 'invalid input';
+			signInMessage = '입력이 올바르지 않습니다';
 			return;
 		}
 
@@ -56,7 +56,7 @@
 
 	const handleSignUp = async () => {
 		if (signUpId === '' || signUpPass === '' || signUpPass !== signUpPassConfirm) {
-			signUpMessage = 'invalid input';
+			signUpMessage = '입력이 올바르지 않습니다';
 			return;
 		}
 
@@ -120,7 +120,9 @@
 		<form class="signup" on:submit|preventDefault={() => (prom = handleSignUp())}>
 			<h2>가입</h2>
 			<input bind:value={signUpId} placeholder="ID" />
+			아이디 : 특수기호 없는 영문/숫자 4-15 글자
 			<input type="password" bind:value={signUpPass} placeholder="PASSWORD" />
+			비밀번호 : 영문+숫자 6-30 글자 (포함가능 : @#$%^&*)
 			<input type="password" bind:value={signUpPassConfirm} placeholder="PASSWORD CONFIRM" />
 			{#if signUpMessage !== ''}
 				<p class="error">{signUpMessage}</p>
