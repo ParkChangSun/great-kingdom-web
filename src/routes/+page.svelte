@@ -41,6 +41,8 @@
 				세우는 것이 중요합니다.
 			</li>
 		</ul>
+
+		<p><a href="https://github.com/ParkChangSun/great-kingdom-web">Github</a></p>
 	</article>
 </main>
 
