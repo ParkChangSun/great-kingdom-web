@@ -5,6 +5,8 @@
 	import { page } from '$app/stores';
 	import { browser, building } from '$app/environment';
 
+	interface tab {}
+
 	type GameTable = {
 		GameTableId: string;
 		GameTableName: string;
@@ -126,13 +128,16 @@
 		wsm.send({ action: 'table', EventType: 3, Pass: true });
 	};
 	const resign = () => {
-		wsm.send({ action: 'table', EventType: 3, Surrender: true });
+		wsm.send({ action: 'table', EventType: 3, Resign: true });
 	};
 	const movePlayerSlot = () => {
 		wsm.send({ action: 'table', EventType: 4 });
 	};
 	const kick = () => {
 		wsm.send({ action: 'table', EventType: 5 });
+	};
+	const leave = () => {
+		goto('/lobby');
 	};
 </script>
 
@@ -170,7 +175,9 @@
 		<div class="box">
 			<p class="info-head">{table.GameTableName}</p>
 			<p class="info-head">Turn {table.Game.Turn}</p>
-			<span class={`${table.Game.Turn % 2 === 1 ? 'blue' : ''} turn-count`}>
+			<span
+				class={`${table.Game.Playing && table.Game.Turn % 2 === 1 ? 'blue' : ''} blue-border turn-count`}
+			>
 				<span>{table.Game.CoinToss[0]}</span>
 				<span>
 					{Math.floor(blueTime / 60000)}:{String(Math.floor((blueTime % 60000) / 1000)).padStart(
@@ -179,7 +186,9 @@
 					)}
 				</span>
 			</span>
-			<span class={`${table.Game.Turn % 2 !== 1 ? 'orange' : ''} turn-count`}>
+			<span
+				class={`${table.Game.Playing && table.Game.Turn % 2 !== 1 ? 'orange' : ''} orange-border turn-count`}
+			>
 				<span>{table.Game.CoinToss[1]}</span>
 				<span>
 					{Math.floor(orangeTime / 60000)}:{String(
@@ -193,10 +202,10 @@
 				<span>{c}</span>
 			{/each}
 		</div>
-		<div class="chat-input">
+		<form class="chat-input" on:submit={sendMessage}>
 			<input type="text" bind:value={chatInput} disabled={!wsAuthed} />
-			<button on:click={sendMessage}>CHAT</button>
-		</div>
+			<button type="submit">CHAT</button>
+		</form>
 		<div class="info-btn">
 			{#if kickable}
 				<button
@@ -216,8 +225,9 @@
 				</button>
 			{/if}
 			<button on:click={movePlayerSlot} disabled={table.Game.Playing} class="game-btn">
-				{isPlayer ? 'Watch' : 'Play'}
+				{isPlayer ? 'Spectate' : 'Play'}
 			</button>
+			<button on:click={leave} class="game-btn">Leave</button>
 		</div>
 	</div>
 
@@ -342,10 +352,17 @@
 		color: white;
 		background-color: orange;
 	}
+	.blue-border {
+		border: 1px blue solid;
+	}
+	.orange-border {
+		border: 1px orange solid;
+	}
 
 	.chat-box {
 		overflow-y: scroll;
 		flex-grow: 1;
+		min-height: 0;
 	}
 	.chat-input {
 		display: flex;

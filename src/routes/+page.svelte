@@ -43,6 +43,7 @@
 		</ul>
 
 		<p><a href="https://github.com/ParkChangSun/great-kingdom-web">Github</a></p>
+		<p>1.0.1</p>
 	</article>
 </main>
 
