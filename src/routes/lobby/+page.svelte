@@ -32,6 +32,8 @@
 	let chat: string[] = [];
 	let chatDiv: HTMLDivElement;
 
+	let chatUsers: string[] = [];
+
 	const handler = (data: any) => {
 		if (data.EventType === 'CHAT') {
 			const { Chat }: { Chat: string } = data;
@@ -41,6 +43,9 @@
 				if (scrollTop + clientHeight >= scrollHeight - 50)
 					chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
 			});
+		} else if (data.EventType === 'USERS') {
+			const { Users }: { Users: string[] } = data;
+			chatUsers = Users;
 		} else {
 			console.log(data);
 		}
@@ -140,21 +145,29 @@
 			<p>{e.message}</p>
 		{/await}
 	</div>
-	<div class="chat">
-		<h2>Chat</h2>
-		<div class="chat-box" bind:this={chatDiv}>
-			{#each chat as c}
-				<div class="chat-message">{c}</div>
+	<h2>Chat</h2>
+	<div class="chat-section">
+		<div class="chat-box">
+			<div class="chat-messages" bind:this={chatDiv}>
+				{#each chat as c}
+					<div class="chat-message">{c}</div>
+				{/each}
+			</div>
+			<form class="chat-input-form" on:submit|preventDefault={sendChat}>
+				<input
+					bind:value={chatInput}
+					disabled={!$wsAuthed}
+					placeholder={$wsAuthed ? 'Send chat message' : 'Connecting...'}
+				/>
+				<button type="submit">Send</button>
+			</form>
+		</div>
+		<div class="chat-users">
+			<span>{chatUsers.length} online</span>
+			{#each chatUsers as u}
+				<span>{u}</span>
 			{/each}
 		</div>
-		<form class="chat-input-form" on:submit|preventDefault={sendChat}>
-			<input
-				bind:value={chatInput}
-				disabled={!$wsAuthed}
-				placeholder={$wsAuthed ? 'Send chat message' : 'Connecting...'}
-			/>
-			<button type="submit">Send</button>
-		</form>
 	</div>
 
 	{#if isPopupOpened}
@@ -238,18 +251,22 @@
 		align-items: flex-end;
 	}
 
-	.chat {
+	.chat-section {
 		display: flex;
-		flex-direction: column;
-		margin-top: 20px;
-		height: 250px;
+		gap: 10px;
 	}
 	.chat-box {
+		flex: 4;
+		display: flex;
+		flex-direction: column;
+		height: 250px;
+	}
+	.chat-messages {
+		flex: 1;
 		border: 1px solid #ccc;
 		padding: 10px;
 		overflow-y: auto;
 		background: white;
-		flex: 3;
 	}
 	.chat-input-form {
 		display: flex;
@@ -258,6 +275,12 @@
 	.chat-input-form input {
 		flex: 1;
 		padding: 5px;
+	}
+	.chat-users {
+		flex: 1;
+		border: 1px solid #ccc;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.popup-container {

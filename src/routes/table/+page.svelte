@@ -5,8 +5,6 @@
 	import { page } from '$app/stores';
 	import { browser, building } from '$app/environment';
 
-	interface tab {}
-
 	type GameTable = {
 		GameTableId: string;
 		GameTableName: string;
@@ -58,7 +56,11 @@
 	const handler = (data: any) => {
 		if (data.EventType === 'CHAT') {
 			chat = [...chat, data.Chat];
-			tick().then(() => chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' }));
+			tick().then(() => {
+				const { scrollTop, scrollHeight, clientHeight } = chatDiv;
+				if (scrollTop + clientHeight >= scrollHeight - 50)
+					chatDiv.scroll({ top: chatDiv.scrollHeight, behavior: 'smooth' });
+			});
 		} else if (data.EventType === 'TABLE') {
 			table = { ...table, ...data };
 
@@ -202,8 +204,8 @@
 				<span>{c}</span>
 			{/each}
 		</div>
-		<form class="chat-input" on:submit={sendMessage}>
-			<input type="text" bind:value={chatInput} disabled={!wsAuthed} />
+		<form class="chat-input" on:submit|preventDefault={sendMessage}>
+			<input type="text" bind:value={chatInput} disabled={!$wsAuthed} />
 			<button type="submit">CHAT</button>
 		</form>
 		<div class="info-btn">
@@ -259,7 +261,7 @@
 		</div>
 	</div>
 
-	{#if !wsAuthed}
+	{#if !$wsAuthed}
 		<div class="popup-container">connecting...</div>
 	{/if}
 </div>
@@ -362,7 +364,7 @@
 	.chat-box {
 		overflow-y: scroll;
 		flex-grow: 1;
-		min-height: 0;
+		height: 0px;
 	}
 	.chat-input {
 		display: flex;
