@@ -51,17 +51,24 @@
 		}
 	};
 
-	const wsm = new WebSocketManager(`${WS_URL}?GameTableId=globalchat`, handler);
-	let wsAuthed = wsm.getAuthorized();
+	const wsm = new WebSocketManager(
+		`${WS_URL}?GameTableId=globalchat&UserId=${$userInfoStore.Id}`,
+		handler
+	);
 	const unsub = userInfoStore.subscribe((v) => {
 		if (!v.Authorized) return;
 
 		wsm.connect();
 	});
+	let wsAuthed = wsm.getAuthorized();
+	const unsub2 = wsAuthed.subscribe((v) => {
+		if (v) chat = ['Connected.'];
+	});
 
 	onDestroy(() => {
 		wsm.cleanUp();
 		unsub();
+		unsub2();
 	});
 
 	let chatInput: string = '';
@@ -204,7 +211,6 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 10px;
 	}
 	.lobby-header-buttons {
 		display: flex;

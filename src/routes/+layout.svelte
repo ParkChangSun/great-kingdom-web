@@ -23,6 +23,10 @@
 		name="keywords"
 		content="그레이트 킹덤, 이세돌, 보드게임, 바둑, 추상 전략 게임, 온라인 보드게임, 위즈스톤"
 	/>
+	<link
+		href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap"
+		rel="stylesheet"
+	/>
 </svelte:head>
 
 <header>
@@ -77,6 +81,7 @@
 		min-height: 90vh;
 		margin: 0;
 		background-color: #f4f4f4;
+		font-family: 'Noto Sans KR', sans-serif;
 	}
 
 	footer {

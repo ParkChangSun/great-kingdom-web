@@ -89,10 +89,9 @@
 	};
 
 	const wsm = new WebSocketManager(
-		`${WS_URL}?GameTableId=${!building ? $page.url.searchParams.get('tableId') : ''}`,
+		`${WS_URL}?GameTableId=${!building ? $page.url.searchParams.get('tableId') : ''}&UserId=${$userInfoStore.Id}`,
 		handler
 	);
-	let wsAuthed = wsm.getAuthorized();
 	const unsub = userInfoStore.subscribe(async (v) => {
 		if (!v.Authorized) {
 			browser && goto('/lobby');
@@ -101,10 +100,15 @@
 
 		wsm.connect();
 	});
+	let wsAuthed = wsm.getAuthorized();
+	const unsub2 = wsAuthed.subscribe((v) => {
+		if (v) chat = ['Connected.'];
+	});
 
 	onDestroy(() => {
 		wsm.cleanUp();
 		unsub();
+		unsub2();
 	});
 
 	beforeNavigate((e) => {

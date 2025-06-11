@@ -140,21 +140,27 @@
 		{:then u}
 			<h2>{u.UserId}</h2>
 			<button on:click={handleSignOut} class="signout">Sign Out</button>
-			<p>WINs : {u.W}</p>
-			<p>LOSSes : {u.L}</p>
+			<p>{u.W}W {u.L}L ${Math.round((u.W / (u.W + u.L)) * 10000) / 100}% WL</p>
 			{#if u.RecentGames.length === 0}
 				<p>No game history</p>
 			{:else}
 				<div class="game-history">
+					Recent 10 Games
 					{#each u.RecentGames as g}
 						<div class={`game-history-item`}>
-							{#if g.WinnerId === g.BlueId}
-								🏆
-							{/if}
-							{g.BlueId} VS {g.OrangeId}
-							{#if g.WinnerId === g.OrangeId}
-								🏆
-							{/if}
+							<span class="blue">
+								{g.BlueId}
+								{#if g.WinnerId === g.BlueId}
+									🏆
+								{/if}
+							</span>
+							<span class="versus">VS</span>
+							<span class="orange">
+								{#if g.WinnerId === g.OrangeId}
+									🏆
+								{/if}
+								{g.OrangeId}
+							</span>
 						</div>
 					{/each}
 				</div>
@@ -215,17 +221,24 @@
 		border: none;
 		cursor: pointer;
 	}
-	.game-history {
-		padding: 10px;
-		margin-bottom: 5px;
-		border-radius: 5px;
-		max-height: 400px;
-		overflow-y: auto;
-	}
+
 	.game-history-item {
-		padding: 10px;
-		margin-bottom: 5px;
-		border-radius: 5px;
-		border: 1px solid black;
+		padding: 3px;
+		display: flex;
+		justify-content: space-between;
+	}
+	.game-history-item:nth-child(even) {
+		background-color: whitesmoke;
+	}
+	.blue {
+		color: blue;
+	}
+	.orange {
+		color: orange;
+	}
+	.versus {
+		position: absolute;
+		right: 50%;
+		transform: translateX(50%);
 	}
 </style>

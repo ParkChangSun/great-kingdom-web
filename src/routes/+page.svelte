@@ -11,17 +11,21 @@
 			경험해보세요!
 		</p>
 		<a href="https://www.koreaboardgames.com/product/detail?prdCd=PD2024002250BXBO">
-			보드게임 구매하기
+			실물 보드게임 구매하기
 		</a>
 
-		<h2>공지</h2>
-		버그/피드백은 전체채팅으로
-		<br />
-		플레이할 사람이 없어도 전체채팅으로
-		<br />
-		메시지 확인까지 최소 몇분 걸립니다
-		<br />
-		기능 추가 예정:기보
+		<h2>개발자의 말</h2>
+		<p>이 프로젝트는 그레이트 킹덤을 할 친구가 없어서 만들었습니다.</p>
+		<p>플레이어가 없다면 전체 채팅을 통해 제게 메시지를 보내실 수 있습니다.</p>
+		<p>제가 자리에 있다면 3분 안에 오겠습니다.</p>
+
+		<p>1.0.4 2025-06-12 변경사항</p>
+		<ul>
+			<li>현재 로비 접속 플레이어 수 및 아이디</li>
+			<li>홈 페이지 수정</li>
+			<li>최근 게임 내역 수정</li>
+		</ul>
+		<p><a href="https://github.com/ParkChangSun/great-kingdom-web">Github</a></p>
 
 		<h2>특징</h2>
 		<ul>
@@ -41,9 +45,6 @@
 				세우는 것이 중요합니다.
 			</li>
 		</ul>
-
-		<p><a href="https://github.com/ParkChangSun/great-kingdom-web">Github</a></p>
-		<p>1.0.2:2025/05/19</p>
 	</article>
 </main>
 
