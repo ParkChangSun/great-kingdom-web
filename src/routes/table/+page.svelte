@@ -145,11 +145,17 @@
 	const leave = () => {
 		goto('/lobby');
 	};
+
+	let i1 = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', ''];
 </script>
 
 <div class="table">
 	<div class="board">
+		{#each i1 as i}
+			<div class="board-index"><span>{i}</span></div>
+		{/each}
 		{#each table.Game.Board as row, r}
+			<div class="board-index"><span>{r + 1}</span></div>
 			{#each row as cell, c}
 				<button
 					class={`cell cellstatus${cell}`}
@@ -161,6 +167,10 @@
 					{/if}
 				</button>
 			{/each}
+			<div class="board-index"><span>{r + 1}</span></div>
+		{/each}
+		{#each i1 as i}
+			<div class="board-index"><span>{i}</span></div>
 		{/each}
 	</div>
 
@@ -278,11 +288,16 @@
 
 	.board {
 		display: grid;
-		grid-template-columns: repeat(9, 1fr);
-		grid-template-rows: repeat(9, 1fr);
+		grid-template-columns: 15px repeat(9, 1fr) 15px;
+		grid-template-rows: 15px repeat(9, 1fr) 15px;
 		gap: 5px;
 		border: 5px solid gray;
 		padding: 10px;
+	}
+	.board-index {
+		display: flex;
+		justify-content: center;
+		align-items: center;
 	}
 	.cell {
 		width: 50px;
