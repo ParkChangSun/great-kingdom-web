@@ -18,6 +18,10 @@
         class="font-medium text-blue-600 dark:text-blue-500 hover:underline"
         href="/guide/gametable">🎮 테이블 설명</a
       >
+      <a
+        class="font-medium text-blue-600 dark:text-blue-500 hover:underline"
+        href="/guide/policy">Privacy Policy</a
+      >
     </nav>
     <div class="w-4/5">
       {@render children()}

@@ -1,9 +1,9 @@
-import { derived, get, writable, type Writable } from 'svelte/store';
+import { get, writable, } from 'svelte/store';
 import axios, { isAxiosError, type AxiosRequestConfig } from 'axios';
 import { browser } from '$app/environment';
 
-export const REST_URL = 'https://api.greatkingdom.net'
-export const WS_URL = 'wss://websocket.greatkingdom.net'
+export const REST_URL: string = import.meta.env.VITE_REST_API_URL
+export const WS_URL: string = import.meta.env.VITE_WS_API_URL
 
 function persistentStore<T>(key: string, initialValue: T) {
 	const storedValue = browser && localStorage.getItem(key);
@@ -104,7 +104,6 @@ export class WebSocketManager {
 			this.send({ action: 'auth', Authorization: get(userInfoStore).AccessToken });
 		});
 		this.socket.addEventListener('close', (e) => {
-			console.log(e);
 			this.cleanUp()
 			this.onClose()
 		});
@@ -129,7 +128,7 @@ export class WebSocketManager {
 		}, 540000);
 	}
 	send(p: any) {
-		if (this.socket) this.socket.send(JSON.stringify(p));
+		if (this.socket && this.socket.readyState === this.socket.OPEN) this.socket.send(JSON.stringify(p));
 	}
 	isClosed() {
 		return this.socket && (this.socket.readyState === this.socket.CLOSING || this.socket.readyState === this.socket.CLOSED)

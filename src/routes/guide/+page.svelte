@@ -1,11 +1,19 @@
 <svelte:head>
-	<title>공지 - 그레이트 킹덤 온라인</title>
+  <title>공지 - 그레이트 킹덤 온라인</title>
 </svelte:head>
 
-<h2>공지</h2>
+<h2 class="text-2xl my-3">
+  b0.1.0 2025-07-01 변경사항
+  <a
+    href="https://github.com/ParkChangSun/great-kingdom-web"
+    class="font-medium text-blue-600 dark:text-blue-500 hover:underline"
+    >Github</a
+  >
+</h2>
+<ul>
+  <li>플레이한 게임 기보 목록 : 10개 단위로 보여줍니다.</li>
+</ul>
 
-버그/피드백은 전체채팅으로
-<br />
-플레이할 사람이 없어도 전체채팅으로
-<br />
-메시지 확인까지 최소 몇분 걸립니다
+<style lang="postcss">
+  @reference "tailwindcss";
+</style>

@@ -7,7 +7,7 @@
   } from "$lib";
   import { isAxiosError } from "axios";
 
-  let mode = "signin";
+  const alphabet = ["", "A", "B", "C", "D", "E", "F", "G", "H", "I", ""];
 
   type UserInfo = {
     Id: string;
@@ -30,13 +30,15 @@
       throw new Error("error getuserinfo");
     }
   };
-  let getUserPromise: Promise<UserInfo>;
+  let getUserPromise = $derived(
+    $userInfoStore.Authorized ? getUserInfo() : null
+  );
 
-  let signInId = "";
-  let signInPass = "";
-  let signInMessage = "";
+  let signInId = $state("");
+  let signInPass = $state("");
+  let signInMessage = $state("");
 
-  let prom: Promise<void>;
+  let authPromise: Promise<void> | null = $state(null);
   const handleSignin = async () => {
     if (signInId === "" || signInPass === "") {
       signInMessage = "입력이 올바르지 않습니다";
@@ -56,10 +58,10 @@
     }
   };
 
-  let signUpId = "";
-  let signUpPass = "";
-  let signUpPassConfirm = "";
-  let signUpMessage = "";
+  let signUpId = $state("");
+  let signUpPass = $state("");
+  let signUpPassConfirm = $state("");
+  let signUpMessage = $state("");
 
   const handleSignUp = async () => {
     if (
@@ -99,12 +101,59 @@
     }
   };
 
-  $: if ($userInfoStore.Authorized) {
-    mode = "user";
-    getUserPromise = getUserInfo();
-  } else {
-    mode = "signin";
+  const deleteUser = async () => {
+    try {
+      if (!confirm("Are you sure you want to delete the data?")) {
+        return;
+      }
+      const res = await authorizedApi.post<Authorization>("/user", {
+        Id: $userInfoStore.Id,
+      });
+      alert("delete success");
+      userInfoStore.set(res.data);
+    } catch (error) {
+      if (error instanceof Error) console.log(error);
+    }
+  };
+
+  interface Record {
+    PlayerId: string;
+    Time: string;
+    PlayersId: string[];
+    Board: number[][];
+    Record: {
+      Point: {
+        R: number;
+        C: number;
+      };
+      Pass: boolean;
+    }[];
+    Result: string;
   }
+  interface RecordQuery {
+    StartKey: string;
+    Records: Record[];
+  }
+
+  let records: Record[] = $state([]);
+  let startKey = "";
+
+  const getRecords = async () => {
+    try {
+      const res = await authorizedApi.get<RecordQuery>(
+        `/records?UserId=${$userInfoStore.Id}&StartKey=${startKey}`
+      );
+      records.push(...res.data.Records);
+      startKey = res.data.StartKey;
+    } catch (error) {
+      if (error instanceof Error) console.log(error);
+    }
+  };
+  let getRecordsProm: Promise<void> | null = $derived(
+    $userInfoStore.Authorized ? getRecords() : null
+  );
+
+  let mode = $derived($userInfoStore.Authorized ? "user" : "signin");
 </script>
 
 <svelte:head>
@@ -131,7 +180,7 @@
     </div>
     <form
       class="flex flex-col items-center"
-      onsubmit={() => (prom = handleSignin())}
+      onsubmit={() => (authPromise = handleSignin())}
     >
       <div class="relative w-1/2 mt-6">
         <input
@@ -167,8 +216,7 @@
         class="rounded-lg text-white bg-indigo-500 w-1/4 py-2 mt-6 hover:bg-indigo-700"
         type="submit"
       >
-        <!-- prom p|unde -->
-        {#await prom}
+        {#await authPromise}
           ⏳
         {:then v}
           로그인
@@ -192,7 +240,7 @@
     </div>
     <form
       class="flex flex-col items-center"
-      onsubmit={() => (prom = handleSignUp())}
+      onsubmit={() => (authPromise = handleSignUp())}
     >
       <div class="relative w-1/2 mt-6">
         <input
@@ -247,7 +295,7 @@
       <button
         class="rounded-lg text-white bg-indigo-500 w-1/4 py-2 mt-6 hover:bg-indigo-700"
       >
-        {#await prom}
+        {#await authPromise}
           ⏳
         {:then v}
           가입
@@ -258,42 +306,67 @@
     {#await getUserPromise}
       <p class="text-center">⏳</p>
     {:then u}
-      <div class="flex justify-between">
-        <h2 class="text-2xl">{u.Id}</h2>
-        <button
-          onclick={handleSignOut}
-          class="text-white bg-red-500 hover:bg-red-600 cursor-pointer px-2"
-        >
-          Sign Out
-        </button>
-      </div>
-      <p>
-        <span class="text-blue-500">{u.W}W</span>
-        <span class="text-red-500">{u.L}L</span>
-        <span class="text-indigo-500">
-          {u.W !== 0 ? Math.round((u.W / (u.W + u.L)) * 10000) / 100 : "0.00"}%
-          WL
-        </span>
-      </p>
-      <!-- {#if u.RecentGames.length === 0}
-        <p>No game history</p>
-      {:else}
-        <div class="game-history">
-          Recent 10 Games
-          {#each u.RecentGames as g}
-            <div class={`game-history-item`}>
-              <span class="blue">
-                {g.BlueId}
-              </span>
-              <span class="versus">VS</span>
-              <span class="orange">
-                {g.OrangeId}
-              </span>
-              <span>{g.Result}</span>
+      {#if u}
+        <div class="flex justify-between">
+          <h2 class="text-2xl">{u.Id}</h2>
+          <button
+            onclick={handleSignOut}
+            class="text-white bg-red-500 hover:bg-red-600 cursor-pointer px-2"
+          >
+            Sign Out
+          </button>
+        </div>
+        <p>
+          <span class="text-blue-500">{u.W}W</span>
+          <span class="text-red-500">{u.L}L</span>
+          <span class="text-indigo-500">
+            {u.W !== 0
+              ? Math.round((u.W / (u.W + u.L)) * 10000) / 100
+              : "0.00"}% WL
+          </span>
+        </p>
+        <h2 class="text-xl">Records</h2>
+        <div class="flex flex-col overflow-y-auto max-h-80 gap-4">
+          {#each records as r}
+            <div class="flex flex-col">
+              <div>
+                <span class="text-blue-500">{r.PlayersId[0]}</span>
+                <span>VS</span>
+                <span class="text-orange-500">{r.PlayersId[1]}</span>
+                <span>{r.Time}</span>
+              </div>
+              <div class="flex gap-4">
+                {#each r.Record as m}
+                  {#if m.Pass}
+                    <span class="odd:text-blue-500 even:text-orange-500"
+                      >Pass</span
+                    >
+                  {:else}
+                    <span class="odd:text-blue-500 even:text-orange-500"
+                      >{alphabet[m.Point.C]}{m.Point.R}</span
+                    >
+                  {/if}
+                {/each}
+              </div>
+              <span>{r.Result}</span>
             </div>
           {/each}
+          {#await getRecordsProm}
+            loading
+          {:then v}
+            <button
+              class="cursor-pointer"
+              onclick={() => (getRecordsProm = getRecords())}>MORE</button
+            >
+          {/await}
         </div>
-      {/if} -->
+        <button
+          class="text-white bg-red-500 hover:bg-red-600 cursor-pointer px-2 w-1/5"
+          onclick={deleteUser}>Delete User</button
+        >
+      {:else}
+        <span>internal promise error</span>
+      {/if}
     {:catch e}
       <p>{e.message}</p>
     {/await}

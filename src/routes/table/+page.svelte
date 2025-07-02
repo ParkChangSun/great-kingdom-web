@@ -32,7 +32,6 @@
     CoinToss: number;
     LastMoveTime: number;
     GameTable: {
-      Turn: number;
       Board: number[][];
       Record: {
         Point: { R: number; C: number };
@@ -49,12 +48,13 @@
     CoinToss: 0,
     LastMoveTime: 0,
     GameTable: {
-      Turn: 0,
       Board: Array(9).fill(Array(9).fill(0)),
       Record: [],
       Result: "initstate",
     },
   });
+
+  let turn = $derived(session.GameTable.Record.length + 1);
 
   let players = $derived([
     "Players",
@@ -64,11 +64,13 @@
   ]);
   let record = $derived([
     ...Array.from(session.GameTable.Record, (r, i) =>
-      r.Pass ? "Pass" : `${i + 1}. ${alphabet[r.Point.C + 1]}${r.Point.R + 1}`
+      r.Pass
+        ? `${i + 1}. Pass`
+        : `${i + 1}. ${alphabet[r.Point.C + 1]}${r.Point.R + 1}`
     ),
     session.GameTable.Result,
   ]);
-  let lastMove = $derived(session.GameTable.Record[session.GameTable.Turn - 2]);
+  let lastMove = $derived(session.GameTable.Record[turn - 2]);
 
   let chat: string[] = $state([]);
   let activeTab = $state(0);
@@ -102,7 +104,7 @@
       orangeTime = session.Players[orangeIndex].RemainingTime;
 
       timer = setInterval(() => {
-        if (session.GameTable!.Turn % 2 === 1) {
+        if (turn % 2 === 1) {
           blueTime =
             session.Players[blueIndex].RemainingTime -
             (Date.now() - session.LastMoveTime);
@@ -172,9 +174,7 @@
     wsm.send({ action: "table", EventType: 5 });
   };
 
-  let currentTurnPlayerIndex = $derived(
-    (session.GameTable.Turn + session.CoinToss + 1) % 2
-  );
+  let currentTurnPlayerIndex = $derived((turn + session.CoinToss + 1) % 2);
   let playing = $derived(session.GameTable.Result === "");
   let isUserPlayer = $derived(
     Array.from(session.Players, (p) => p.Id).includes($userInfoStore.Id)
@@ -205,7 +205,7 @@
   );
   let tableBorder = $derived(
     playing
-      ? session.GameTable.Turn % 2 === 1
+      ? turn % 2 === 1
         ? " border-blue-500"
         : " border-orange-500"
       : " border-gray-500"
@@ -216,7 +216,9 @@
       $userInfoStore.Id === session.Players[currentTurnPlayerIndex].Id
   );
   let startable = $derived(
-    isUserPlayer && session.Players.length === 2 && !playing
+    session.Players[0]?.Id === $userInfoStore.Id &&
+      session.Players.length === 2 &&
+      !playing
   );
 </script>
 
@@ -237,10 +239,10 @@
 <div class="flex gap-2">
   <div class="flex flex-col">
     <div class={`flex justify-between p-2 ${firstPlayerColor}`}>
-      <span>
+      <span class="text-white">
         👑 {session.Players.length > 0 ? session.Players[0].Id : "EMPTY"}
       </span>
-      <span>
+      <span class="text-white">
         {session.CoinToss % 2 === 0 ? blueTimeFormat : orangeTimeFormat}
       </span>
     </div>
@@ -276,10 +278,10 @@
       {/each}
     </div>
     <div class={`flex justify-between p-2 ${secondPlayerColor}`}>
-      <span>
+      <span class="text-white">
         🕹️ {session.Players.length > 1 ? session.Players[1].Id : "EMPTY"}
       </span>
-      <span>
+      <span class="text-white">
         {session.CoinToss % 2 === 0 ? orangeTimeFormat : blueTimeFormat}
       </span>
     </div>

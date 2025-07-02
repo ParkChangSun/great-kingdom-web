@@ -21,20 +21,14 @@
     <h2 class="text-2xl my-3">개발자의 말</h2>
     <p>
       플레이어가 없다면 저와 게임하실 수 있습니다.<br />
-      7시 이후로 전체채팅을 남겨주세요.
-    </p>
-
-    <h2 class="text-2xl my-3">
-      b1.0.5 2025-06-14 변경사항
+      7시 이후로 전체채팅을 남겨주세요.<br />
+      버그 제보나 건의사항은
       <a
         href="https://github.com/ParkChangSun/great-kingdom-web"
         class="font-medium text-blue-600 dark:text-blue-500 hover:underline"
         >Github</a
-      >
-    </h2>
-    <ul>
-      <li>작업중</li>
-    </ul>
+      > 이슈를 사용하시거나 전체채팅으로 남겨주세요.
+    </p>
 
     <h2 class="text-2xl my-3">그레이트 킹덤에 대해</h2>
     <ul>
