@@ -122,7 +122,7 @@
     PlayersId: string[];
     Board: number[][];
     Record: {
-      Point: {
+      Cell: {
         R: number;
         C: number;
       };
@@ -343,7 +343,7 @@
                     >
                   {:else}
                     <span class="odd:text-blue-500 even:text-orange-500"
-                      >{alphabet[m.Point.C]}{m.Point.R}</span
+                      >{alphabet[m.Cell.C]}{m.Cell.R}</span
                     >
                   {/if}
                 {/each}

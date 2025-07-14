@@ -34,7 +34,7 @@
     GameTable: {
       Board: number[][];
       Record: {
-        Point: { R: number; C: number };
+        Cell: { R: number; C: number };
         Pass: boolean;
       }[];
       Result: string;
@@ -66,7 +66,7 @@
     ...Array.from(session.GameTable.Record, (r, i) =>
       r.Pass
         ? `${i + 1}. Pass`
-        : `${i + 1}. ${alphabet[r.Point.C + 1]}${r.Point.R + 1}`
+        : `${i + 1}. ${alphabet[r.Cell.C + 1]}${r.Cell.R + 1}`
     ),
     session.GameTable.Result,
   ]);
@@ -158,7 +158,7 @@
     wsm.send({
       action: "table",
       EventType: 3,
-      Point: { R: r, C: c },
+      Cell: { R: r, C: c },
     });
   };
   const doPassMove = () => {
@@ -266,7 +266,7 @@
             disabled={!(isUserTurn && session.GameTable.Board[r][c] === 0)}
             onclick={() => doSingleMove(r, c)}
           >
-            {#if lastMove && !lastMove.Pass && lastMove.Point.R === r && lastMove.Point.C === c}
+            {#if lastMove && !lastMove.Pass && lastMove.Cell.R === r && lastMove.Cell.C === c}
               <div class="rounded-full size-4 bg-green-500"></div>
             {/if}
           </button>
